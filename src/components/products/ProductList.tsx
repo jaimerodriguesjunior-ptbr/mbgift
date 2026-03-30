@@ -1,6 +1,7 @@
-import { Barcode, Search } from "lucide-react";
+import { Barcode, Search, Camera } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Product } from "@/types";
+import { ScannerModal } from "./ScannerModal";
 
 interface ProductListProps {
   products: Product[];
@@ -12,6 +13,7 @@ interface ProductListProps {
 
 export function ProductList({ products, selectedProductId, onSelectProduct, onEanNotFound, stockMeta = {} }: ProductListProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -41,24 +43,42 @@ export function ProductList({ products, selectedProductId, onSelectProduct, onEa
   return (
     <div className="flex h-full flex-col bg-white/40 backdrop-blur-md border-r border-[#b08d57]/10">
       <div className="p-6 border-b border-[#b08d57]/10">
-        <div className="relative group">
-          <div className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-2 text-[#a69b8f] group-focus-within:text-[#b08d57] transition-colors">
-            <Barcode className="h-4 w-4" />
-            <Search className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 group">
+            <div className="absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-2 text-[#a69b8f] group-focus-within:text-[#b08d57] transition-colors">
+              <Barcode className="h-4 w-4" />
+              <Search className="h-4 w-4" />
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Bipar codigo ou buscar"
+              className="w-full rounded-2xl border-2 border-[#b08d57]/30 bg-white py-3.5 pl-[4.35rem] pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </div>
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder="Bipar codigo ou buscar produto"
-            className="w-full rounded-2xl border-2 border-[#b08d57]/30 bg-white py-3.5 pl-[4.35rem] pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
+          <button
+            onClick={() => setIsScannerOpen(true)}
+            className="flex h-[3.25rem] w-[3.25rem] md:hidden flex-shrink-0 items-center justify-center rounded-2xl bg-[#8c6d45] text-white shadow-lg shadow-[#8c6d45]/20 hover:bg-[#725a38] transition-all active:scale-95"
+          >
+            <Camera className="h-5 w-5" />
+          </button>
         </div>
         <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45] md:hidden">
-          Bipar codigo ou digitar o nome do produto
+          Use a câmera para ler etiquetas e códigos
         </p>
       </div>
+
+      {isScannerOpen && (
+        <ScannerModal
+          onClose={() => setIsScannerOpen(false)}
+          onCodeScanned={(code) => {
+            setSearchTerm(code);
+            setIsScannerOpen(false);
+          }}
+        />
+      )}
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2 custom-scrollbar">
         {filteredProducts.map((product) => {
