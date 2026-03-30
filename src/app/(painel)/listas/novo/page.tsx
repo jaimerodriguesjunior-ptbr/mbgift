@@ -76,8 +76,7 @@ export default function NovaListaPage() {
         setClient(foundClient);
         setFormData(prev => ({
           ...prev,
-          brideName: foundClient.name,
-          city: foundClient.address?.split("-")[1]?.trim() || ""
+          brideName: foundClient.name
         }));
       }
     }
@@ -302,11 +301,11 @@ export default function NovaListaPage() {
                       icon={<Calendar className="h-5 w-5" />}
                     />
                     <FormField
-                      label="Cidade / Local"
+                      label="Local"
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      placeholder="Ex: Campinas, SP"
+                      placeholder="Ex: Espaço Villa Jardim, Campinas"
                       icon={<MapPin className="h-5 w-5" />}
                     />
                   </div>
