@@ -31,6 +31,7 @@ export default function HostListEditorPage({ params }: { params: { slug: string 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error">("idle");
   const [scannerFeedback, setScannerFeedback] = useState<string | null>(null);
+  const [scanFeedbackKey, setScanFeedbackKey] = useState(0);
   const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
   const [isSavingMetadata, setIsSavingMetadata] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -121,13 +122,16 @@ export default function HostListEditorPage({ params }: { params: { slug: string 
     }
   }
 
-  function setTransientScanStatus(status: "success" | "error", durationMs = 1800) {
+  function setTransientScanStatus(status: "success" | "error", durationMs?: number) {
+    const duration = durationMs ?? (status === "success" ? 3000 : 4000);
     clearScanStatusTimeout();
     setScanStatus(status);
+    setScanFeedbackKey((prev) => prev + 1);
     scanStatusTimeoutRef.current = window.setTimeout(() => {
       setScanStatus("idle");
+      setScannerFeedback(null);
       scanStatusTimeoutRef.current = null;
-    }, durationMs);
+    }, duration);
   }
 
   function stopScanner() {
@@ -849,6 +853,24 @@ export default function HostListEditorPage({ params }: { params: { slug: string 
               </div>
             )}
 
+            {scanStatus !== "idle" && scannerFeedback && (
+              <div
+                key={scanFeedbackKey}
+                className={`flex items-center gap-3 rounded-2xl px-5 py-3.5 text-sm font-bold animate-in fade-in slide-in-from-bottom-2 duration-300 ${
+                  scanStatus === "success"
+                    ? "bg-green-50 border-2 border-green-200 text-green-800"
+                    : "bg-red-50 border-2 border-red-200 text-red-700"
+                }`}
+              >
+                {scanStatus === "success" ? (
+                  <Check className="h-5 w-5 flex-shrink-0 text-green-600" />
+                ) : (
+                  <X className="h-5 w-5 flex-shrink-0 text-red-500" />
+                )}
+                <span>{scannerFeedback}</span>
+              </div>
+            )}
+
             <div className="flex items-center gap-4">
               <div className="relative flex-1 group">
               <div className={`absolute left-0 top-1/2 flex h-10 w-14 -translate-y-1/2 items-center justify-center gap-1.5 transition-colors ${
@@ -975,9 +997,27 @@ export default function HostListEditorPage({ params }: { params: { slug: string 
               </div>
 
               {scanStatus === "success" && (
-                <div className="absolute inset-0 bg-[#8c6d45]/40 backdrop-blur-sm flex items-center justify-center animate-in zoom-in duration-300">
-                  <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center text-[#8c6d45]">
-                    <Check className="h-12 w-12 stroke-[3px]" />
+                <div className="absolute inset-0 bg-green-600/50 backdrop-blur-sm flex items-center justify-center animate-in zoom-in duration-300">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center text-green-600 shadow-2xl">
+                      <Check className="h-12 w-12 stroke-[3px]" />
+                    </div>
+                    {scannerFeedback && (
+                      <p className="text-white text-sm font-bold text-center max-w-[250px] bg-black/30 rounded-2xl px-4 py-2 backdrop-blur-sm">{scannerFeedback}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {scanStatus === "error" && (
+                <div className="absolute inset-0 bg-red-600/40 backdrop-blur-sm flex items-center justify-center animate-in zoom-in duration-300">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-24 w-24 bg-white rounded-full flex items-center justify-center text-red-600 shadow-2xl">
+                      <X className="h-12 w-12 stroke-[3px]" />
+                    </div>
+                    {scannerFeedback && (
+                      <p key={scanFeedbackKey} className="text-white text-sm font-bold text-center max-w-[250px] bg-black/30 rounded-2xl px-4 py-2 backdrop-blur-sm animate-in fade-in duration-200">{scannerFeedback}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -988,9 +1028,6 @@ export default function HostListEditorPage({ params }: { params: { slug: string 
             <div className="text-center space-y-2">
               <h3 className="text-white font-serif text-2xl">Aponte para o Código</h3>
               <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-black">Leitura contínua ativa enquanto a câmera estiver aberta</p>
-              <p className="mx-auto max-w-xs text-sm font-semibold text-white/80">
-                {scannerFeedback}
-              </p>
             </div>
             <button
               onClick={() => setIsScannerOpen(false)}
