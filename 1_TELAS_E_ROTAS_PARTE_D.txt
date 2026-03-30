@@ -1,0 +1,268 @@
+=== CONTEÚDO PARCIAL: 1_TELAS_E_ROTAS_PARTE_D.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\produtos\page.tsx
+==================================================
+"use client";
+
+import { ArrowLeft, Plus } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import { ProductList } from "@/components/products/ProductList";
+import { ProductDetail } from "@/components/products/ProductDetail";
+import { Product } from "@/types";
+import { fetchProductFromCosmos } from "@/services/cosmosService";
+import { RefreshCw, Tag } from "lucide-react";
+import LabelCenter from "@/components/products/LabelCenter";
+import { addProduct, getAvailableStock, getReservedQuantityForProduct, updateProduct, useMockStore } from "@/lib/mock-store";
+
+export default function ProdutosPage() {
+  const { products } = useMockStore();
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const selectedProduct = products.find((product) => product.id === selectedProductId) ?? null;
+  const [isSearching, setIsSearching] = useState(false);
+  const [showLabelCenter, setShowLabelCenter] = useState(false);
+  const stockMeta = products.reduce<Record<string, { available: number; reserved: number }>>((acc, product) => {
+    acc[product.id] = {
+      available: getAvailableStock(product.id),
+      reserved: getReservedQuantityForProduct(product.id)
+    };
+    return acc;
+  }, {});
+
+  const handleCreateProduct = () => {
+    const newProduct: Product = {
+      id: `prod-${Date.now()}`,
+      name: "Novo Produto",
+      price: 0,
+      stock: 0,
+      images: ["https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"],
+      mainImageIndex: 0,
+      category: "Geral",
+      ean: "",
+      isDraft: true
+    };
+    addProduct(newProduct);
+    setSelectedProductId(newProduct.id);
+  };
+
+  const handleEanNotFound = async (ean: string) => {
+    setIsSearching(true);
+    try {
+      const cosmosData = await fetchProductFromCosmos(ean);
+      
+      const newProduct: Product = {
+        id: `prod-${Date.now()}`,
+        name: cosmosData?.description || "Novo Produto",
+        price: 0,
+        stock: 0,
+        images: cosmosData?.thumbnail 
+          ? [cosmosData.thumbnail] 
+          : ["https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop"],
+        mainImageIndex: 0,
+        category: "Geral",
+        ean: ean,
+        isDraft: true,
+        // Pro tip: the user can manually add brand but we can put it in description for now or expand the model
+      };
+
+      addProduct(newProduct);
+      setSelectedProductId(newProduct.id);
+    } catch (error) {
+      console.error("Cosmos search failed", error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleDetailUpdate = (updated: Product) => {
+    updateProduct(updated);
+    setSelectedProductId(updated.id);
+  };
+
+  return (
+    <div className="flex h-screen flex-col bg-[#fdfbf7] selection:bg-[#b08d57]/20">
+      {/* Custom Global Header for Products */}
+      <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-8 z-30 shadow-sm relative">
+        <Link 
+          href="/dashboard"
+          className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group"
+        >
+          <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 group-hover:scale-110 transition-all border-2 border-[#b08d57]/20">
+            <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+          </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </Link>
+        
+        <div className="flex flex-col items-center">
+          <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">LEBLANC</h1>
+          <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Gestão de Estoque</p>
+          {isSearching && (
+            <div className="absolute top-full mt-2 bg-white px-4 py-2 rounded-full border border-amber-200 shadow-sm animate-pulse">
+              <span className="text-[9px] font-black uppercase text-amber-600 tracking-widest">Buscando na Bluesoft...</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setShowLabelCenter(true)}
+              className="flex items-center gap-2 rounded-full border-2 border-[#b08d57]/20 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#5c4a33] hover:bg-[#faf8f5] hover:border-[#b08d57]/40 transition-all shadow-sm"
+            >
+              <Tag className="h-3.5 w-3.5" />
+              Etiquetas
+            </button>
+            <button 
+              onClick={handleCreateProduct}
+              className="flex items-center gap-2 rounded-full bg-[#8c6d45] px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 hover:bg-[#725a38] hover:scale-105 active:scale-95 transition-all"
+            >
+              Novo Produto
+            </button>
+          </div>
+      </header>
+
+      {/* Label Center Overlay */}
+      {showLabelCenter && (
+        <LabelCenter 
+          products={products} 
+          onClose={() => setShowLabelCenter(false)} 
+        />
+      )}
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Side: Product List - Hidden on mobile when a product is selected */}
+        <aside className={`w-full md:w-80 lg:w-96 flex-shrink-0 z-20 overflow-hidden border-r-2 border-[#b08d57]/10 bg-[#faf8f5] transition-all duration-300 ${
+          selectedProduct ? 'hidden md:block' : 'block'
+        }`}>
+          <ProductList
+            products={products}
+            selectedProductId={selectedProduct?.id}
+            onSelectProduct={(product) => setSelectedProductId(product.id)}
+            onEanNotFound={handleEanNotFound}
+            stockMeta={stockMeta}
+          />
+        </aside>
+
+        {/* Right Side: Detail Form - Full screen on mobile when selected */}
+        <main className={`flex-1 overflow-hidden relative z-10 bg-[#fefcfb] transition-all duration-300 ${
+          selectedProduct ? 'block' : 'hidden md:block'
+        }`}>
+          {selectedProduct ? (
+            <div className="h-full flex flex-col">
+              {/* Mobile Back Button - Only visible on small screens */}
+              <div className="md:hidden p-4 bg-white border-b border-[#b08d57]/10 flex items-center justify-between">
+                <button 
+                    onClick={() => setSelectedProductId(null)}
+                  className="flex items-center gap-2 text-[#8c6d45] font-bold text-xs uppercase tracking-widest"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Lista
+                </button>
+                <div className="text-[10px] font-black text-[#5c4a33] uppercase">Modo Editor</div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ProductDetail 
+                  product={selectedProduct} 
+                  onUpdate={handleDetailUpdate}
+                  reservedStock={selectedProduct ? stockMeta[selectedProduct.id]?.reserved ?? 0 : 0}
+                  availableStock={selectedProduct ? stockMeta[selectedProduct.id]?.available ?? selectedProduct.stock : 0}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="hidden md:flex h-full flex-col items-center justify-center text-center p-12 opacity-50">
+              {/* This state is handled inside ProductDetail, but for layout symmetry: */}
+              <ProductDetail product={null} onUpdate={() => {}} />
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\api\cosmos\[ean]\route.ts
+==================================================
+import { NextResponse } from 'next/server';
+
+const COSMOS_TOKEN = "KEWMtGmL1-0kt4VZuFrfwQ";
+
+export async function GET(
+  request: Request,
+  { params }: { params: { ean: string } }
+) {
+  const ean = params.ean;
+
+  try {
+    const response = await fetch(`https://api.cosmos.bluesoft.com.br/gtins/${ean}.json`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Cosmos-Token": COSMOS_TOKEN,
+        "User-Agent": "Cosmos-API-Request"
+      }
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `Erro na API Cosmos: ${response.status}` },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Erro no Proxy Cosmos:", error);
+    return NextResponse.json(
+      { error: "Erro interno ao buscar no Cosmos" },
+      { status: 500 }
+    );
+  }
+}
+
+
+==================================================
+ARQUIVO: .\src\app\api\upcitemdb\[upc]\route.ts
+==================================================
+import { NextResponse } from 'next/server';
+
+export async function GET(
+  request: Request,
+  { params }: { params: { upc: string } }
+) {
+  const upc = params.upc;
+
+  try {
+    // UPCItemDB Explorer/Trial API (100 requests/day, no key needed)
+    const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${upc}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "LeBlanc-POS-App"
+      }
+    });
+
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: `Erro na API UPCItemDB: ${response.status}` },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Erro no Proxy UPCItemDB:", error);
+    return NextResponse.json(
+      { error: "Erro interno ao buscar no UPCItemDB" },
+      { status: 500 }
+    );
+  }
+}
+

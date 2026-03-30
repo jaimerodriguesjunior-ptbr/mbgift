@@ -1,0 +1,22 @@
+export type TenantStoreIdentity = {
+  id: string;
+  slug: string;
+  businessName: string;
+  displayName: string;
+  logoLabel: string | null;
+  tagline: string | null;
+  primaryColor: string | null;
+  secondaryColor: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  documentCnpj: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  addressDistrict: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZipCode: string | null;
+  stateRegistration: string | null;
+  municipalRegistration: string | null;
+  taxRegime: string | null;
+};

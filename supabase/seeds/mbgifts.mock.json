@@ -1,0 +1,194 @@
+{
+  "tenant": {
+    "slug": "le-blanc",
+    "businessName": "Le Blanc Presentes Ltda",
+    "displayName": "Le Blanc Presentes",
+    "logoLabel": "Le Blanc",
+    "tagline": "Curadoria premium para presentes, mesa posta e decoração.",
+    "primaryColor": "#eadfd7",
+    "secondaryColor": "#a69b8f",
+    "contactEmail": "contato@leblancpresentes.com.br",
+    "contactPhone": "(19) 99871-4450",
+    "documentCnpj": "00.000.000/0001-00",
+    "addressLine1": "Rua Cascalho, 123",
+    "addressDistrict": "Cambuí",
+    "addressCity": "Campinas",
+    "addressState": "SP",
+    "addressZipCode": "13025-000",
+    "taxRegime": "Simples Nacional"
+  },
+  "products": [
+    {
+      "name": "Panela Redonda Evolution 24cm - Flame",
+      "price": 1899.0,
+      "stock": 2,
+      "category": "Cozinha",
+      "images": [
+        "https://images.unsplash.com/photo-1590664095641-7fa05f689813?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567890"
+    },
+    {
+      "name": "Travessa Oval Cerâmica 36cm - Marseille",
+      "price": 459.9,
+      "stock": 7,
+      "category": "Mesa posta",
+      "images": [
+        "https://images.unsplash.com/photo-1594385208974-2e75f9d8ad48?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567891"
+    },
+    {
+      "name": "Faqueiro Oxford Champagne 30pç",
+      "price": 1250.0,
+      "stock": 4,
+      "category": "Mesa posta",
+      "images": [
+        "https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567892"
+    },
+    {
+      "name": "Chaleira Kone 1.6L - Bamboo",
+      "price": 649.0,
+      "stock": 3,
+      "category": "Chá e Café",
+      "images": [
+        "https://images.unsplash.com/photo-1544787210-28271d7b60ef?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567893"
+    },
+    {
+      "name": "Grelha Retangular Ferro Fundido - Dune",
+      "price": 1149.0,
+      "stock": 5,
+      "category": "Cozinha",
+      "images": [
+        "https://images.unsplash.com/photo-1584281729155-3c9933058042?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567894"
+    },
+    {
+      "name": "Set Moedores de Sal e Pimenta - Merengue",
+      "price": 429.0,
+      "stock": 12,
+      "category": "Acessórios",
+      "images": [
+        "https://images.unsplash.com/photo-1588258334259-22a964098495?q=80&w=800&auto=format&fit=crop"
+      ],
+      "mainImageIndex": 0,
+      "ean": "7891234567895"
+    }
+  ],
+  "clients": [
+    {
+      "name": "Lívia Sampaio",
+      "phone": "(19) 99871-4450",
+      "instagram": "liviaemcasa",
+      "cpf": "123.456.789-00",
+      "address": "Rua Cascalho, 123 - Campinas, SP",
+      "isTrusted": true
+    },
+    {
+      "name": "Bruna Teles",
+      "phone": "(16) 99711-1093",
+      "instagram": "bruteles_",
+      "cpf": "987.654.321-11",
+      "address": "Av. Paulista, 1000 - São Paulo, SP",
+      "isTrusted": true
+    },
+    {
+      "name": "Marina Fava",
+      "phone": "(11) 99555-7788",
+      "instagram": "marifava",
+      "cpf": "456.789.123-22",
+      "address": "Rua Oscar Freire, 500 - São Paulo, SP",
+      "isTrusted": false
+    },
+    {
+      "name": "Talita Moura",
+      "phone": "(11) 98989-2121",
+      "instagram": "talitamdecor",
+      "cpf": "321.654.987-33",
+      "address": "Rua Amauri, 200 - São Paulo, SP",
+      "isTrusted": true
+    }
+  ],
+  "giftLists": [
+    {
+      "slug": "camila-e-ana",
+      "hostName": "Camila & Ana",
+      "eventDate": "2026-08-15",
+      "city": "Campinas, SP",
+      "headline": "Uma celebraÃ§Ã£o da arte de receber e do bem-viver.",
+      "coverImageUrl": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+      "hostAccessToken": "leblanc-camila-ana-host",
+      "items": [
+        {
+          "productEan": "7891234567890",
+          "note": "Para os almoÃ§os de domingo",
+          "status": "disponivel"
+        },
+        {
+          "productEan": "7891234567891",
+          "note": "Mesa posta de recepÃ§Ã£o",
+          "status": "reservado",
+          "guestName": "FamÃ­lia Sampaio",
+          "guestMessage": "Vamos celebrar esse novo capÃ­tulo com muito carinho."
+        },
+        {
+          "productEan": "7891234567892",
+          "note": "Jantares especiais",
+          "status": "comprado",
+          "guestName": "Bruna Teles",
+          "guestMessage": "Que a casa nova seja cheia de encontros felizes."
+        },
+        {
+          "productEan": "7891234567893",
+          "note": "Momentos de pausa e chÃ¡",
+          "status": "disponivel"
+        }
+      ]
+    },
+    {
+      "slug": "livia-sampaio",
+      "hostName": "LÃ­via Sampaio",
+      "eventDate": "2026-12-20",
+      "city": "Campinas, SP",
+      "headline": "Bem-vindos Ã  nossa nova jornada!",
+      "coverImageUrl": "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+      "hostAccessToken": "leblanc-livia-host",
+      "items": [
+        {
+          "productEan": "7891234567890",
+          "note": "Amamos cozinhar juntos!",
+          "status": "disponivel"
+        },
+        {
+          "productEan": "7891234567891",
+          "note": "Para nossas noites de lasanha",
+          "status": "comprado",
+          "guestName": "FamÃ­lia Sampaio",
+          "guestMessage": "Que a nova casa seja repleta de sabores e alegrias."
+        },
+        {
+          "productEan": "7891234567895",
+          "note": "O toque de mestre",
+          "status": "disponivel"
+        },
+        {
+          "productEan": "7891234567893",
+          "note": "Para o nosso chÃ¡ da tarde",
+          "status": "reservado",
+          "guestName": "Bruna Teles",
+          "guestMessage": "Mal posso esperar pelos nossos chÃ¡s da tarde na casa nova."
+        }
+      ]
+    }
+  ]
+}

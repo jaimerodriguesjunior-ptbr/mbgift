@@ -1,0 +1,157 @@
+"use client";
+
+import { useState } from "react";
+import { X, CreditCard, Banknote, Smartphone, FileText, ChevronRight, Check } from "lucide-react";
+
+export type PaymentMethod = "credito" | "debito" | "pix" | "dinheiro" | "boleto";
+
+export interface PaymentEntry {
+  method: PaymentMethod;
+  amount: number;
+}
+
+const METHOD_LABELS: Record<PaymentMethod, string> = {
+  credito: "Cartão de Crédito",
+  debito: "Cartão de Débito",
+  pix: "PIX",
+  dinheiro: "Dinheiro",
+  boleto: "Boleto",
+};
+
+const METHOD_COLORS: Record<PaymentMethod, string> = {
+  credito: "bg-purple-50 border-purple-200 text-purple-800",
+  debito: "bg-blue-50 border-blue-200 text-blue-800",
+  pix: "bg-green-50 border-green-200 text-green-800",
+  dinheiro: "bg-amber-50 border-amber-200 text-amber-800",
+  boleto: "bg-orange-50 border-orange-200 text-orange-800",
+};
+
+const METHOD_ICONS: Record<PaymentMethod, React.ReactNode> = {
+  credito: <CreditCard className="h-5 w-5" />,
+  debito: <CreditCard className="h-5 w-5" />,
+  pix: <Smartphone className="h-5 w-5" />,
+  dinheiro: <Banknote className="h-5 w-5" />,
+  boleto: <FileText className="h-5 w-5" />,
+};
+
+interface PaymentModalProps {
+  remaining: number;
+  payments: PaymentEntry[];
+  onAddPayment: (entry: PaymentEntry) => void;
+  onClose: () => void;
+  onFinalize: () => void;
+}
+
+export function PaymentModal({ remaining, payments, onAddPayment, onClose, onFinalize }: PaymentModalProps) {
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [amount, setAmount] = useState(remaining.toFixed(2));
+
+  const isExact = remaining <= 0;
+
+  const handleConfirm = () => {
+    const value = parseFloat(amount);
+    if (!selectedMethod || isNaN(value) || value <= 0) return;
+    onAddPayment({ method: selectedMethod, amount: Math.min(value, remaining) });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-[#2a2421]/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg rounded-[2rem] bg-white border-2 border-[#b08d57]/20 shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-300">
+        
+        <button onClick={onClose} className="absolute right-4 top-4 p-2 rounded-full hover:bg-[#f7f2ed] transition-colors text-[#a69b8f]">
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="mb-6">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">Faltam</p>
+          <h2 className="font-serif text-4xl text-[#2a2421] mt-1">
+            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(remaining)}
+          </h2>
+          <p className="text-xs text-[#a69b8f] mt-1">Restante a receber</p>
+        </div>
+
+        {/* Payments received so far */}
+        {payments.length > 0 && (
+          <div className="mb-5 space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#a69b8f]">Já recebido</p>
+            {payments.map((p, i) => (
+              <div key={i} className={`flex items-center justify-between rounded-xl px-4 py-2.5 border text-sm font-bold ${METHOD_COLORS[p.method]}`}>
+                <div className="flex items-center gap-2">
+                  {METHOD_ICONS[p.method]}
+                  <span>{METHOD_LABELS[p.method]}</span>
+                </div>
+                <span>+ {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(p.amount)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Method selection */}
+        {!isExact && (
+          <>
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33] mb-3">Forma de pagamento</p>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {(["credito", "debito", "pix", "dinheiro", "boleto"] as PaymentMethod[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setSelectedMethod(m)}
+                  className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 py-3 px-2 text-[9px] font-black uppercase tracking-widest transition-all ${
+                    selectedMethod === m
+                      ? "border-[#8c6d45] bg-[#8c6d45] text-white shadow-lg shadow-[#8c6d45]/20"
+                      : "border-[#b08d57]/20 bg-white text-[#5c4a33] hover:border-[#b08d57]/40 hover:bg-[#fdfbf7]"
+                  }`}
+                >
+                  {METHOD_ICONS[m]}
+                  {m === "credito" ? "Crédito" : m === "debito" ? "Débito" : m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {selectedMethod && (
+              <div className="flex gap-3 items-end mb-5">
+                <div className="flex-1 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Valor</label>
+                  <div className="flex items-center gap-2 rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-3 shadow-sm">
+                    <span className="text-[#a69b8f] font-bold text-sm">R$</span>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="flex-1 bg-transparent text-xl font-black text-[#2a2421] focus:outline-none"
+                      step="0.01"
+                      min="0.01"
+                      max={remaining}
+                      autoFocus
+                    />
+                  </div>
+                </div>
+                <button
+                  onClick={handleConfirm}
+                  className="flex items-center gap-2 rounded-2xl bg-[#8c6d45] px-6 py-3.5 text-xs font-black uppercase tracking-widest text-white hover:bg-[#725a38] transition-all shadow-lg shadow-[#8c6d45]/20"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                  Confirmar
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Finalize */}
+        <button
+          onClick={onFinalize}
+          disabled={!isExact}
+          className={`w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-xs font-black uppercase tracking-widest transition-all ${
+            isExact
+              ? "bg-green-600 text-white hover:bg-green-700 shadow-xl shadow-green-600/20"
+              : "bg-[#f7f2ed] text-[#a69b8f] cursor-not-allowed"
+          }`}
+        >
+          <Check className="h-4 w-4" />
+          {isExact ? "Finalizar Venda" : "Aguardando pagamento completo..."}
+        </button>
+      </div>
+    </div>
+  );
+}

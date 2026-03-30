@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MBGifts | Apresentação funcional</title>
+  <style>
+    :root {
+      --ink: #2a2421;
+      --taupe: #8c6d45;
+      --gold: #b08d57;
+      --sand: #f8f4ee;
+      --paper: #fffdfa;
+      --line: rgba(176, 141, 87, 0.2);
+      --muted: #6d6256;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Georgia", "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(234, 223, 215, 0.7), transparent 34%),
+        radial-gradient(circle at top right, rgba(240, 229, 213, 0.55), transparent 32%),
+        linear-gradient(180deg, #fcfaf7 0%, #f7f2ed 100%);
+      color: var(--ink);
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 18mm 16mm;
+      background: rgba(255, 253, 250, 0.92);
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+      padding: 16px 18px;
+      box-shadow: 0 14px 40px rgba(176, 141, 87, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      min-height: 257mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .eyebrow {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--taupe);
+      margin: 0 0 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 44px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 28px;
+      font-weight: 500;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    p, li {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #3b342f;
+    }
+
+    .lead {
+      font-size: 15px;
+      max-width: 125mm;
+      color: var(--muted);
+    }
+
+    .signature {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--taupe);
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.9);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--taupe);
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 16px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .card p:last-child,
+    .panel p:last-child {
+      margin-bottom: 0;
+    }
+
+    ul {
+      padding-left: 18px;
+      margin: 0;
+    }
+
+    .steps {
+      counter-reset: flow;
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .step-number {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: rgba(176, 141, 87, 0.12);
+      color: var(--taupe);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--taupe);
+    }
+
+    .small {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .page {
+        box-shadow: none;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="page hero">
+    <div>
+      <p class="eyebrow">Apresentação funcional</p>
+      <h1>MBGifts</h1>
+      <p class="lead">
+        Plataforma para gestão de loja de presentes com operação elegante, experiência premium e estrutura preparada para crescimento.
+      </p>
+      <div class="pill-row">
+        <span class="pill">Produtos</span>
+        <span class="pill">Clientes</span>
+        <span class="pill">Caixa</span>
+        <span class="pill">Condicionais</span>
+        <span class="pill">Listas de Eventos</span>
+        <span class="pill">Etiquetas</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">Visão executiva</p>
+      <p>
+        O sistema já demonstra os fluxos centrais da rotina comercial de uma loja de presentes, com foco em organização, atendimento e clareza operacional. Nesta próxima etapa entram a persistência real dos dados, a segurança por tenant e a personalização dinâmica de cada loja.
+      </p>
+      <div class="footer-note">MBGifts</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">O que já pode ser apresentado</p>
+    <h2>Visão geral da operação</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Painel inicial</h3>
+        <p>
+          Acesso rápido aos módulos principais da operação, com organização visual adequada para o uso diário da equipe da loja.
+        </p>
+        <h3>Gestão de produtos</h3>
+        <p>
+          Cadastro, edição, controle visual de estoque, reserva por condicional e apoio à identificação por EAN, QR Code e código de barras.
+        </p>
+        <h3>Gestão de clientes</h3>
+        <p>
+          Cadastro, atualização e acompanhamento de clientes, incluindo status de confiança para condicional e atalhos para operação comercial.
+        </p>
+      </div>
+
+      <div class="panel">
+        <h3>Caixa</h3>
+        <p>
+          Fluxo de venda com carrinho, desconto, múltiplas formas de pagamento e integração com listas de presentes.
+        </p>
+        <h3>Condicionais</h3>
+        <p>
+          Abertura da retirada, emissão de recibo, revisão de devolução e transformação parcial ou total em venda.
+        </p>
+        <h3>Listas de eventos</h3>
+        <p>
+          Experiência separada para anfitrião e convidado, com estrutura pronta para compartilhamento e acompanhamento dos itens.
+        </p>
+      </div>
+    </div>
+
+    <div class="cards" style="margin-top: 16px;">
+      <div class="card">
+        <h3>Etiquetas premium</h3>
+        <p>Geração de QR Code e código de barras para identificação física dos itens da loja.</p>
+      </div>
+      <div class="card">
+        <h3>Configurações</h3>
+        <p>Base administrativa pronta para concentrar identidade da loja, dados fiscais e personalização do tenant.</p>
+      </div>
+      <div class="card">
+        <h3>Experiência mobile</h3>
+        <p>Navegação e fluxos pensados para operação em telas menores e apoio à bipagem.</p>
+      </div>
+      <div class="card">
+        <h3>Estrutura multi-loja</h3>
+        <p>Arquitetura já preparada para evolução com múltiplos tenants e identidade própria por empresa.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Fluxos demonstráveis</p>
+    <h2>Como a operação já pode funcionar</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <div>
+          <h3>Produtos e identificação</h3>
+          <p>
+            O time pode cadastrar itens, localizar por busca ou código, revisar estoque e gerar etiquetas com QR Code e código de barras.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">2</div>
+        <div>
+          <h3>Clientes e relacionamento</h3>
+          <p>
+            O sistema organiza o cadastro do cliente e permite indicar quem está habilitado para condicional, facilitando a tomada de decisão no atendimento.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">3</div>
+        <div>
+          <h3>Venda no caixa</h3>
+          <p>
+            O operador pode montar carrinho, ajustar quantidades, aplicar desconto e registrar pagamentos múltiplos em um fluxo simples e visual.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">4</div>
+        <div>
+          <h3>Condicional com conversão em venda</h3>
+          <p>
+            Na retirada, a loja registra os itens levados pelo cliente e gera recibo. Na devolução, decide item a item o que volta e o que segue para venda.
+          </p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-number">5</div>
+        <div>
+          <h3>Listas de eventos</h3>
+          <p>
+            O anfitrião organiza os itens da lista e o convidado acessa uma experiência dedicada para escolher presentes com mais clareza.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <p class="eyebrow">Diferenciais percebidos</p>
+    <h2>O valor já visível nesta etapa</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Elegância operacional</h3>
+        <p>
+          O sistema foi desenhado para traduzir sofisticação na rotina da loja, sem perder objetividade nos fluxos do dia a dia.
+        </p>
+        <h3>Clareza visual</h3>
+        <p>
+          O atendimento ganha mais segurança com telas organizadas, leitura rápida das ações e navegação consistente entre módulos.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Preparação para crescer</h3>
+        <p>
+          A base já foi pensada para múltiplas lojas, com personalização da identidade e evolução para dados reais em banco.
+        </p>
+        <h3>Implantação progressiva</h3>
+        <p>
+          A experiência atual já permite demonstrar a lógica completa da operação, enquanto a próxima fase consolida persistência, segurança e automações.
+        </p>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top: 16px;">
+      <p class="eyebrow">Nota de implantação</p>
+      <p>
+        O sistema já está estruturado visual e funcionalmente para demonstrar os principais fluxos da loja. Na próxima etapa entram a persistência real dos dados, a segurança por tenant e a configuração dinâmica da identidade da empresa por meio do banco.
+      </p>
+      <p class="small">
+        Este material apresenta apenas o que já é demonstrável hoje, sem antecipar como concluído o que ainda depende da implantação de backend e persistência real.
+      </p>
+      <div class="footer-note">MBGifts</div>
+    </div>
+  </section>
+</body>
+</html>

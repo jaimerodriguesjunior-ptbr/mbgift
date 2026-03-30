@@ -1,0 +1,556 @@
+=== CONTEÚDO PARCIAL: 1_TELAS_E_ROTAS_PARTE_C.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\listas\[id]\page.tsx
+==================================================
+import { notFound } from "next/navigation";
+
+import { ListaItem } from "@/components/listas/ListaItem";
+import { Button } from "@/components/ui/Button";
+import { getGiftListById, getProductById } from "@/lib/mock-data";
+import { formatDate } from "@/lib/utils";
+
+type ListDetailPageProps = {
+  params: {
+    id: string;
+  };
+};
+
+export default function ListDetailPage({ params }: ListDetailPageProps) {
+  const list = getGiftListById(params.id);
+
+  if (!list) {
+    notFound();
+  }
+
+  const items = list.items
+    .map((item) => {
+      const product = getProductById(item.productId);
+      if (!product) {
+        return null;
+      }
+
+      return { ...item, product };
+    })
+    .filter(Boolean);
+
+  const summary = {
+    disponivel: list.items.filter((item) => item.status === "disponivel").length,
+    reservado: list.items.filter((item) => item.status === "reservado").length,
+    comprado: list.items.filter((item) => item.status === "comprado").length
+  };
+
+  return (
+    <div className="space-y-8">
+      <section className="hero-panel overflow-hidden">
+        <div className="grid gap-6 lg:grid-cols-[0.9fr,1.1fr] lg:items-center">
+          <img src={list.photo} alt={list.brideName} className="h-full min-h-[320px] w-full rounded-[2rem] object-cover" />
+          <div>
+            <p className="text-xs uppercase tracking-[0.32em] text-black/45">Detalhes da lista</p>
+            <h1 className="mt-4 font-serif text-5xl text-ink">{list.brideName}</h1>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-black/65">{list.headline}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-[1.5rem] bg-white p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-black/45">Evento</p>
+                <p className="mt-2 text-lg font-medium text-ink">{formatDate(list.eventDate)}</p>
+              </div>
+              <div className="rounded-[1.5rem] bg-white p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-black/45">Cidade</p>
+                <p className="mt-2 text-lg font-medium text-ink">{list.city}</p>
+              </div>
+              <div className="rounded-[1.5rem] bg-white p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-black/45">Itens</p>
+                <p className="mt-2 text-lg font-medium text-ink">{list.items.length} presentes</p>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button href={`/lista-publica/${list.slug}`} size="lg">
+                Abrir página pública
+              </Button>
+              <Button variant="secondary" size="lg">
+                Editar lista
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="grid gap-4 sm:grid-cols-3">
+        <div className="surface-card p-5">
+          <p className="text-xs uppercase tracking-[0.24em] text-black/45">Disponíveis</p>
+          <p className="mt-3 font-serif text-4xl text-ink">{summary.disponivel}</p>
+        </div>
+        <div className="surface-card p-5">
+          <p className="text-xs uppercase tracking-[0.24em] text-black/45">Reservados</p>
+          <p className="mt-3 font-serif text-4xl text-ink">{summary.reservado}</p>
+        </div>
+        <div className="surface-card p-5">
+          <p className="text-xs uppercase tracking-[0.24em] text-black/45">Comprados</p>
+          <p className="mt-3 font-serif text-4xl text-ink">{summary.comprado}</p>
+        </div>
+      </section>
+
+      <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        {items.map((item) =>
+          item ? (
+            <ListaItem key={item.id} product={item.product} status={item.status} note={item.note} />
+          ) : null
+        )}
+      </section>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\listas\novo\page.tsx
+==================================================
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { 
+  ArrowLeft, Save, Gift, Calendar, MapPin, 
+  User, Image as ImageIcon, Sparkles, Check 
+} from "lucide-react";
+import Link from "next/link";
+import { clients, type Client } from "@/lib/mock-data";
+
+export default function NovaListaPage() {
+  const router = useRouter();
+  const [clienteId, setClienteId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    brideName: "",
+    eventDate: "",
+    city: "",
+    headline: "",
+    photo: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+    slug: ""
+  });
+
+  const [createdList, setCreatedList] = useState<{ slug: string, token: string } | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    setClienteId(params.get("clienteId"));
+  }, []);
+
+  useEffect(() => {
+    if (clienteId) {
+      const foundClient = clients.find(c => c.id === clienteId);
+      if (foundClient) {
+        setClient(foundClient);
+        setFormData(prev => ({
+          ...prev,
+          brideName: foundClient.name,
+          city: foundClient.address?.split("-")[1]?.trim() || ""
+        }));
+      }
+    }
+  }, [clienteId]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+      ...(name === "brideName" ? { slug: value.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') } : {})
+    }));
+  };
+
+  const handleSave = () => {
+    // Generate slug and token for demo
+    const slug = formData.slug || formData.brideName.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    const token = "demo-token";
+    setCreatedList({ slug, token });
+  };
+
+  const hostLink = createdList ? `${window.location.origin}/lista/${createdList.slug}/editar?token=${createdList.token}` : "";
+  const guestLink = createdList ? `${window.location.origin}/lista/${createdList.slug}` : "";
+
+  const handleWhatsAppShare = () => {
+    if (!client || !createdList) return;
+    const phone = client.phone.replace(/\D/g, "");
+    const message = encodeURIComponent(
+      `Olá ${formData.brideName}! Sua lista na Le Blanc está pronta.\n\n` +
+      `🔗 Link para você gerenciar e escanear produtos: ${hostLink}\n\n` +
+      `🔗 Link para seus convidados: ${guestLink}`
+    );
+    window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
+  };
+
+  if (createdList) {
+    return (
+      <div className="flex flex-col h-screen overflow-hidden bg-[#fefcfb]">
+        <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-8 z-30 shadow-sm relative">
+          <Link href="/listas" className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group">
+            <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 group-hover:scale-110 transition-all border-2 border-[#b08d57]/20">
+              <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+            </div>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar para Listas</span>
+          </Link>
+          <div className="flex flex-col items-center">
+            <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">LISTA ATIVA</h1>
+            <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+            <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Sucesso no Cadastro</p>
+          </div>
+          <div className="w-24" />
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-12 lg:p-24 bg-[#fdfbf7]/30">
+          <div className="max-w-2xl mx-auto space-y-12 text-center">
+            <div className="relative inline-block">
+              <div className="h-24 w-24 bg-green-500/10 rounded-full flex items-center justify-center text-green-600 animate-bounce shadow-2xl shadow-green-500/10">
+                <Check className="h-12 w-12 stroke-[3px]" />
+              </div>
+              <Sparkles className="absolute -top-2 -right-2 h-8 w-8 text-[#b08d57] animate-pulse" />
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="font-serif text-5xl text-[#2a2421]">Lista Criada com Excelência!</h2>
+              <p className="text-[11px] uppercase tracking-[0.3em] font-black text-[#8c6d45] max-w-sm mx-auto leading-relaxed">
+                Tudo pronto para os noivos começarem a bipar os produtos pela loja.
+              </p>
+            </div>
+
+            <div className="grid gap-8 text-left">
+              {/* Link Noivos */}
+              <div className="p-10 rounded-[3rem] bg-white border-2 border-[#b08d57]/40 shadow-[0_20px_50px_rgba(176,141,87,0.15)] space-y-5 transition-all hover:shadow-[0_30px_60px_rgba(176,141,87,0.25)]">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-[#5c4a33]">Link do Anfitrião (Edição + Scanner)</h4>
+                  <span className="px-4 py-1.5 bg-amber-100 text-amber-800 rounded-full text-[9px] font-black uppercase tracking-widest leading-none border border-amber-200">Privado</span>
+                </div>
+                <div className="flex items-center gap-4 bg-[#fdfbf7] p-5 rounded-2xl border-2 border-[#b08d57]/20 overflow-hidden shadow-inner">
+                  <p className="flex-1 text-xs font-semibold text-[#2a2421] truncate opacity-70 italic">{hostLink}</p>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(hostLink)}
+                    className="flex-shrink-0 px-4 py-2 bg-white rounded-xl border border-[#b08d57]/30 shadow-sm text-[10px] font-black uppercase tracking-widest text-[#8c6d45] hover:bg-[#8c6d45] hover:text-white transition-all"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+
+              {/* Link Convidados */}
+              <div className="p-10 rounded-[3rem] bg-white border-2 border-[#b08d57]/40 shadow-[0_20px_50px_rgba(176,141,87,0.15)] space-y-5 transition-all hover:shadow-[0_30px_60px_rgba(176,141,87,0.25)]">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[11px] font-black uppercase tracking-widest text-[#5c4a33]">Link dos Convidados (Vitrine)</h4>
+                  <span className="px-4 py-1.5 bg-blue-100 text-blue-800 rounded-full text-[9px] font-black uppercase tracking-widest leading-none border border-blue-200">Público</span>
+                </div>
+                <div className="flex items-center gap-4 bg-[#fdfbf7] p-5 rounded-2xl border-2 border-[#b08d57]/20 overflow-hidden shadow-inner">
+                  <p className="flex-1 text-xs font-semibold text-[#2a2421] truncate opacity-70 italic">{guestLink}</p>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(guestLink)}
+                    className="flex-shrink-0 px-4 py-2 bg-white rounded-xl border border-[#b08d57]/30 shadow-sm text-[10px] font-black uppercase tracking-widest text-[#8c6d45] hover:bg-[#8c6d45] hover:text-white transition-all"
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 space-y-6">
+              <button 
+                onClick={handleWhatsAppShare}
+                className="w-full rounded-3xl bg-[#25d366] py-5 text-sm font-black uppercase tracking-[0.3em] text-white shadow-2xl shadow-[#25d366]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
+              >
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="h-6 w-6 invert brightness-0" alt="" />
+                Enviar para o Cliente
+              </button>
+              
+              <Link 
+                href="/listas"
+                className="block p-4 text-[10px] font-black uppercase tracking-[0.3em] text-[#a69b8f] hover:text-[#8c6d45] transition-colors"
+              >
+                Concluir e Voltar
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-[#fefcfb]">
+      {/* Premium Unified Header */}
+      <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-8 z-30 shadow-sm relative">
+        <button 
+          onClick={() => router.back()}
+          className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group"
+        >
+          <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 group-hover:scale-110 transition-all border-2 border-[#b08d57]/20">
+            <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+          </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </button>
+        
+        <div className="flex flex-col items-center">
+          <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">NOVA LISTA</h1>
+          <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Cadastro de Evento</p>
+        </div>
+
+        <div className="w-24" />
+      </header>
+
+      <main className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 lg:p-20">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid gap-16 lg:grid-cols-[1fr_350px]">
+            
+            {/* Form Section */}
+            <div className="space-y-12">
+              <section className="space-y-8">
+                <div className="flex items-center gap-4 border-b border-[#b08d57]/10 pb-4 text-[#8c6d45]">
+                  <Sparkles className="h-6 w-6" />
+                  <h2 className="font-serif text-3xl text-[#2a2421]">Identidade do Evento</h2>
+                </div>
+
+                <div className="space-y-8">
+                  <FormField
+                    label="Nome dos Noivos / Anfitriões"
+                    name="brideName"
+                    value={formData.brideName}
+                    onChange={handleChange}
+                    placeholder="Ex: Camila & Ana"
+                    icon={<User className="h-5 w-5" />}
+                  />
+
+                  <div className="grid gap-8 md:grid-cols-2">
+                    <FormField
+                      label="Data do Evento"
+                      name="eventDate"
+                      type="date"
+                      value={formData.eventDate}
+                      onChange={handleChange}
+                      icon={<Calendar className="h-5 w-5" />}
+                    />
+                    <FormField
+                      label="Cidade / Local"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder="Ex: Campinas, SP"
+                      icon={<MapPin className="h-5 w-5" />}
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-[11px] uppercase tracking-[0.25em] font-extrabold text-[#5c4a33] ml-1">Mensagem de Boas-vindas</label>
+                    <textarea
+                      name="headline"
+                      value={formData.headline}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full rounded-2xl border-2 border-[#b08d57]/20 bg-white py-4 px-6 text-base font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+                      placeholder="Uma breve saudação aos convidados..."
+                    ></textarea>
+                  </div>
+
+                  <FormField
+                    label="URL da Foto Principal"
+                    name="photo"
+                    value={formData.photo}
+                    onChange={handleChange}
+                    icon={<ImageIcon className="h-5 w-5" />}
+                  />
+                </div>
+              </section>
+
+              <div className="pt-6">
+                <button 
+                  onClick={handleSave}
+                  className="w-full rounded-3xl bg-[#8c6d45] py-6 text-sm font-black uppercase tracking-[0.3em] text-white shadow-2xl shadow-[#8c6d45]/30 hover:bg-[#725a38] hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Criar Lista e Definir Produtos
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Section */}
+            <aside className="hidden lg:block space-y-8">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#a69b8f]">Pré-visualização</h4>
+              
+              <div className="rounded-[3rem] overflow-hidden bg-white shadow-2xl border border-[#b08d57]/10 group transition-all">
+                <div className="relative h-64 overflow-hidden">
+                  <img 
+                    src={formData.photo} 
+                    className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-1000" 
+                    alt="Preview" 
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-8 bg-gradient-to-t from-black/80 to-transparent text-white">
+                    <h3 className="font-serif text-2xl leading-none">{formData.brideName || "Nomes aqui..."}</h3>
+                    <p className="text-[10px] uppercase tracking-widest mt-2 opacity-80">{formData.city || "Cidade aqui..."}</p>
+                  </div>
+                </div>
+                <div className="p-8 text-center bg-[#fdfbf7]/50">
+                  <div className="h-1 w-12 bg-[#8c6d45] mx-auto mb-6 opacity-30" />
+                  <p className="font-serif text-[#5c4a33] italic text-sm line-clamp-3">
+                    {formData.headline || "A sua mensagem para os convidados aparecerá aqui."}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-8 rounded-[2rem] bg-[#8c6d45]/5 border-2 border-[#8c6d45]/10 border-dashed text-center">
+                <Sparkles className="h-8 w-8 mx-auto mb-3 text-[#b08d57] opacity-40" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#8c6d45] leading-relaxed">
+                  Após criar a lista, você poderá escolher os produtos da Le Blanc para compor o estoque do presente!
+                </p>
+              </div>
+            </aside>
+
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function FormField({ label, name, value, onChange, icon, placeholder = "", type = "text" }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; icon: any; placeholder?: string; type?: string }) {
+  return (
+    <div className="space-y-3">
+      <label className="text-[11px] uppercase tracking-[0.25em] font-extrabold text-[#5c4a33] ml-1">{label}</label>
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8c6d45] group-focus-within:text-[#2a2421] transition-colors">
+          {icon}
+        </div>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border-2 border-[#b08d57]/20 bg-white py-4 pl-12 pr-4 text-base font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\listas\page.tsx
+==================================================
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, Plus } from "lucide-react";
+import Link from "next/link";
+import { giftLists as initialLists, type GiftList } from "@/lib/mock-data";
+import { GiftListMaster } from "@/components/listas/GiftListMaster";
+import { GiftListDetail } from "@/components/listas/GiftListDetail";
+
+export default function ListasPage() {
+  const [lists, setLists] = useState<GiftList[]>(initialLists);
+  const [selectedList, setSelectedList] = useState<GiftList | null>(null);
+
+  const handleCreateList = () => {
+    const newList: GiftList = {
+      id: `list-${Date.now()}`,
+      slug: `nova-lista-${Date.now()}`,
+      brideName: "Novo Casal / Evento",
+      eventDate: new Date().toISOString().split('T')[0],
+      photo: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+      city: "Cidade, UF",
+      headline: "Bem-vindos à nossa lista!",
+      items: []
+    };
+    setLists(prev => [newList, ...prev]);
+    setSelectedList(newList);
+  };
+
+  const handleUpdateList = (updated: GiftList) => {
+    setLists(prev => prev.map(l => l.id === updated.id ? updated : l));
+    setSelectedList(updated);
+  };
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-[#fefcfb]">
+      {/* Premium Unified Header */}
+      <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-8 z-30 shadow-sm relative">
+        <Link 
+          href="/dashboard"
+          className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group"
+        >
+          <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 group-hover:scale-110 transition-all border-2 border-[#b08d57]/20">
+            <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+          </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </Link>
+        
+        <div className="flex flex-col items-center">
+          <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">LEBLANC</h1>
+          <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Listas de Presentes</p>
+        </div>
+
+        <button 
+          onClick={handleCreateList}
+          className="flex items-center gap-2 rounded-full border-2 border-[#b08d57]/20 bg-white px-4 md:px-6 py-2 text-[10px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden md:inline">Nova Lista</span>
+          <span className="md:hidden">Novo</span>
+        </button>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Side: Lists Master List */}
+        <aside className={`w-full md:w-80 lg:w-96 flex-shrink-0 shadow-[10px_0_30px_rgba(176,141,87,0.03)] z-20 overflow-hidden border-r border-[#b08d57]/10 transition-all duration-300 ${
+          selectedList ? 'hidden md:block' : 'block'
+        }`}>
+          <GiftListMaster
+            lists={lists}
+            selectedListId={selectedList?.id}
+            onSelectList={setSelectedList}
+          />
+        </aside>
+
+        {/* Right Side: Detail View */}
+        <main className={`flex-1 overflow-hidden relative z-10 bg-[#fefcfb] transition-all duration-300 ${
+          selectedList ? 'block' : 'hidden md:block'
+        }`}>
+          {selectedList ? (
+            <div className="h-full flex flex-col">
+              {/* Mobile Back Button */}
+              <button 
+                onClick={() => setSelectedList(null)}
+                className="md:hidden flex items-center gap-2 p-4 bg-white border-b border-[#b08d57]/10 text-[#8c6d45] font-bold uppercase tracking-wider text-[10px]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar para Listas
+              </button>
+              <div className="flex-1 overflow-hidden">
+                <GiftListDetail
+                  list={selectedList}
+                  onUpdate={handleUpdateList}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="hidden md:flex h-full items-center justify-center p-12 text-center opacity-30">
+              <div className="max-w-xs">
+                <div className="h-24 w-24 rounded-[2.5rem] bg-[#b08d57]/10 flex items-center justify-center mx-auto mb-6 text-[#8c6d45]">
+                  <Plus className="h-10 w-10 stroke-1" />
+                </div>
+                <h3 className="font-serif text-2xl text-[#2a2421]">Gestão de Listas</h3>
+                <p className="mt-3 text-sm font-medium uppercase tracking-[0.2em] text-[#8c6d45]">
+                  Selecione uma lista ao lado para gerenciar itens, prazos e visibilidade.
+                </p>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+

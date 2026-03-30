@@ -1,0 +1,1335 @@
+=== CONTEÚDO PARCIAL: 1_TELAS_E_ROTAS_PARTE_A.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\caixa\page.tsx
+==================================================
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ArrowLeft, Barcode, Trash2, Tag, Percent, CreditCard, Receipt, FileText, Plus, Minus, ShoppingCart, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import Link from "next/link";
+import { giftLists } from "@/lib/mock-data";
+import { Product, SaleRecord } from "@/types";
+import { GiftAlertModal } from "@/components/caixa/GiftAlertModal";
+import { PaymentModal, type PaymentEntry, type PaymentMethod } from "@/components/caixa/PaymentModal";
+import { User, Search } from "lucide-react";
+import { clearCheckoutDraft, getAvailableStock, recordSale, useMockStore } from "@/lib/mock-store";
+
+// ─── types ───────────────────────────────────────────
+interface CartItem {
+  product: Product;
+  qty: number;
+  isGift: boolean;
+  giftListName?: string;
+  locked?: boolean;
+}
+
+interface Expense {
+  id: string;
+  label: string;
+  amount: number;
+}
+
+// ─── helpers ─────────────────────────────────────────
+const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+const METHOD_LABEL: Record<PaymentMethod, string> = { credito: "CC", debito: "CD", pix: "PIX", dinheiro: "Din.", boleto: "Bol." };
+const METHOD_COLOR: Record<PaymentMethod, string> = { credito: "text-purple-700", debito: "text-blue-700", pix: "text-green-700", dinheiro: "text-amber-700", boleto: "text-orange-700" };
+
+// ─── main page ───────────────────────────────────────
+export default function CaixaPage() {
+  const store = useMockStore();
+  const { products, clients, sales, checkoutDraft } = store;
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [discountPct, setDiscountPct] = useState(0);
+  const [eanInput, setEanInput] = useState("");
+  const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [cpf, setCpf] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [saleDone, setSaleDone] = useState(false);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseLabel, setExpenseLabel] = useState("");
+  const [expenseAmount, setExpenseAmount] = useState("");
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editExpenseLabel, setEditExpenseLabel] = useState("");
+  const [editExpenseAmount, setEditExpenseAmount] = useState("");
+
+  // Gift alert state
+  const [giftAlert, setGiftAlert] = useState<{ productName: string; listName: string; guestName: string; product: Product } | null>(null);
+  const [pendingCartProduct, setPendingCartProduct] = useState<Product | null>(null);
+  const [saleOrigin, setSaleOrigin] = useState<{ type: "direct" | "conditional"; id?: string }>({ type: "direct" });
+
+  const scanInputRef = useRef<HTMLInputElement>(null);
+
+  // F-key shortcut for CPF modal
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "F2") { e.preventDefault(); setShowCpfModal(true); }
+      if (e.key === "F1") { e.preventDefault(); scanInputRef.current?.focus(); }
+      if (e.key === "F10" && saleDone) { e.preventDefault(); handlePrint(); }
+      if (e.key === "F12" && saleDone) { e.preventDefault(); handleNfcePrint(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saleDone]);
+
+  useEffect(() => {
+    if (!checkoutDraft || cart.length > 0 || saleDone) {
+      return;
+    }
+
+    const draftItems = checkoutDraft.items
+      .map((item) => {
+        const product = products.find((entry) => entry.id === item.productId);
+        return product
+          ? {
+              product,
+              qty: item.qty,
+              isGift: false,
+              locked: true
+            }
+          : null;
+      })
+      .filter(Boolean) as CartItem[];
+
+    if (draftItems.length === 0) {
+      return;
+    }
+
+    setCart(draftItems);
+    setSelectedClientId(checkoutDraft.clientId);
+    setSaleOrigin({ type: "conditional", id: checkoutDraft.originId });
+  }, [cart.length, checkoutDraft, products, saleDone]);
+
+  // ─── cart calculations ─────────────────────────────
+  const subtotal = cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+  const discountAmt = subtotal * (discountPct / 100);
+  const total = subtotal - discountAmt;
+  const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
+  const remaining = Math.max(0, total - totalPaid);
+  const isPaid = totalPaid >= total && total > 0;
+
+  // ─── EAN / barcode scan ───────────────────────────
+  const handleEanInput = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (saleOrigin.type === "conditional" && !saleDone) {
+      alert("Finalize esta conversão de condicional antes de bipar novos itens.");
+      return;
+    }
+    const ean = eanInput.trim();
+    if (!ean) return;
+    const product = products.find(p => p.ean === ean || p.id === ean);
+    if (!product) {
+      setEanInput("");
+      return;
+    }
+    checkGiftAndAddToCart(product);
+    setEanInput("");
+  };
+
+  const checkGiftAndAddToCart = (product: Product) => {
+    if (saleOrigin.type === "conditional" && !saleDone) {
+      alert("Esta venda veio de um condicional. No caixa só é possível concluir o pagamento.");
+      return;
+    }
+
+    if (getAvailableStock(product.id, store) <= 0) {
+      alert("Este item está sem estoque disponível no momento.");
+      return;
+    }
+
+    // Check if this product is in any active gift list
+    const matchingList = giftLists.find(list =>
+      list.items.some(item => item.productId === product.id && item.status === "disponivel")
+    );
+
+    if (matchingList) {
+      setPendingCartProduct(product);
+      setGiftAlert({
+        productName: product.name,
+        listName: matchingList.brideName,
+        guestName: matchingList.brideName,
+        product,
+      });
+    } else {
+      addToCart(product, false);
+    }
+  };
+
+  const addToCart = (product: Product, isGift: boolean, giftListName?: string) => {
+    setCart(prev => {
+      const existing = prev.find(i => i.product.id === product.id && i.isGift === isGift);
+      const maxAvailable = getAvailableStock(product.id, store);
+      const currentQty = existing?.qty ?? 0;
+
+      if (currentQty >= maxAvailable) {
+        alert("Quantidade indisponível para venda agora.");
+        return prev;
+      }
+
+      if (existing) return prev.map(i => i.product.id === product.id && i.isGift === isGift ? { ...i, qty: i.qty + 1 } : i);
+      return [...prev, { product, qty: 1, isGift, giftListName }];
+    });
+  };
+
+  const removeFromCart = (productId: string) => setCart(prev => prev.filter(i => i.product.id !== productId || i.locked));
+
+  const updateQty = (productId: string, delta: number) => {
+    setCart(prev => prev.map(i => {
+      if (i.product.id !== productId || i.locked) {
+        return i;
+      }
+
+      const maxAvailable = getAvailableStock(productId, store);
+      const nextQty = Math.max(1, Math.min(maxAvailable, i.qty + delta));
+      return { ...i, qty: nextQty };
+    }).filter(i => i.qty > 0));
+  };
+
+  // ─── payment flow ──────────────────────────────────
+  const handleAddPayment = (entry: PaymentEntry) => {
+    setPayments(prev => [...prev, entry]);
+    const newPaid = totalPaid + entry.amount;
+    if (newPaid < total) {
+      // Keep modal open with remaining value - it will update via props
+    }
+  };
+
+  const handleFinalize = () => {
+    recordSale({
+      total,
+      payments,
+      clientId: selectedClientId || undefined,
+      cpf: cpf || undefined,
+      items: cart.map((item) => ({ productId: item.product.id, qty: item.qty })),
+      originType: saleOrigin.type,
+      originId: saleOrigin.id
+    });
+    setSaleDone(true);
+    setShowPayment(false);
+  };
+
+  const handlePrint = () => {
+    // Simulate print - filter out boleto from totals
+    const printablePayments = payments.filter(p => p.method !== "boleto");
+    const printTotal = printablePayments.reduce((s, p) => s + p.amount, 0);
+    alert(`[RECIBO SIMULADO]\nTotal: ${fmt(printTotal)}\n${printablePayments.map(p => `${METHOD_LABEL[p.method]}: ${fmt(p.amount)}`).join("\n")}\n\nNota Fiscal: ${cpf || "Consumidor Final"}`);
+  };
+
+  const handleNfcePrint = () => {
+    if (!saleDone) return;
+    alert(`[NFC-e SIMULADA]\nChave: ${Math.random().toString().slice(2, 18)}\nCliente: ${cpf || "Consumidor Final"}\nTotal: ${fmt(total)}`);
+  };
+
+  const handleNewSale = () => {
+    setCart([]);
+    setDiscountPct(0);
+    setPayments([]);
+    setSaleDone(false);
+    setCpf("");
+    setSelectedClientId("");
+    if (saleOrigin.type === "conditional") {
+      clearCheckoutDraft();
+    }
+    setSaleOrigin({ type: "direct" });
+    setTimeout(() => scanInputRef.current?.focus(), 100);
+  };
+
+  const handleAddExpense = () => {
+    const amt = parseFloat(expenseAmount);
+    if (!expenseLabel || isNaN(amt) || amt <= 0) return;
+    setExpenses(prev => [...prev, { id: `exp-${Date.now()}`, label: expenseLabel, amount: amt }]);
+    setExpenseLabel("");
+    setExpenseAmount("");
+  };
+
+  const handleOpenEditExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setEditExpenseLabel(expense.label);
+    setEditExpenseAmount(expense.amount.toString());
+  };
+
+  const handleSaveEditExpense = () => {
+    if (!editingExpense) return;
+    const amt = parseFloat(editExpenseAmount);
+    if (!editExpenseLabel || isNaN(amt) || amt <= 0) return;
+    setExpenses(prev => prev.map(e => e.id === editingExpense.id ? { ...e, label: editExpenseLabel, amount: amt } : e));
+    setEditingExpense(null);
+  };
+
+  const handleDeleteExpense = () => {
+    if (!editingExpense) return;
+    setExpenses(prev => prev.filter(e => e.id !== editingExpense.id));
+    setEditingExpense(null);
+  };
+
+  // ─── daily summary calculations ───────────────────
+  const allPayments = sales.flatMap(s => s.payments);
+  const dayPix = allPayments.filter(p => p.method === "pix").reduce((s, p) => s + p.amount, 0);
+  const dayCc = allPayments.filter(p => p.method === "credito").reduce((s, p) => s + p.amount, 0);
+  const dayCd = allPayments.filter(p => p.method === "debito").reduce((s, p) => s + p.amount, 0);
+  const dayDin = allPayments.filter(p => p.method === "dinheiro").reduce((s, p) => s + p.amount, 0);
+  const dayBol = allPayments.filter(p => p.method === "boleto").reduce((s, p) => s + p.amount, 0);
+  const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+  const cashBalance = dayDin - totalExpenses;
+
+  // Product quick-add (click from list)
+  const handleProductClick = (product: Product) => checkGiftAndAddToCart(product);
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-[#fdfbf7]">
+      {/* ── Header ── */}
+      <header className="flex h-16 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/15 bg-white px-6 z-30 shadow-sm">
+        <Link href="/dashboard" className="flex items-center gap-2 text-[#2a2421] hover:text-[#8c6d45] transition-all group">
+          <div className="rounded-full bg-[#b08d57]/10 p-2 group-hover:bg-[#b08d57]/20 transition-all border border-[#b08d57]/15">
+            <ArrowLeft className="h-3.5 w-3.5" />
+          </div>
+          <span className="text-[10px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-[2px] bg-[#b08d57]/20" />
+          <h1 className="font-serif text-2xl text-[#2a2421] tracking-[0.2em] uppercase">LEBLANC</h1>
+          <div className="h-8 w-[2px] bg-[#b08d57]/20" />
+          <p className="text-[10px] uppercase tracking-[0.4em] text-[#8c6d45] font-extrabold">Caixa do Dia</p>
+        </div>
+
+        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+          <span className="text-[#a69b8f]">F1 Foco • F2 Cliente • F10 Recibo {saleDone && "• F12 NFC-e"}</span>
+        </div>
+      </header>
+
+      {/* ── Main 3-column layout ── */}
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* ── LEFT: Product catalog quick-add ── */}
+        <aside className="hidden xl:flex w-64 flex-shrink-0 flex-col border-r-2 border-[#b08d57]/10 bg-[#faf8f5] overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#b08d57]/10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">Produtos</p>
+            <p className="text-[9px] text-[#a69b8f] mt-0.5">Clique para adicionar</p>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
+            {products.map(p => (
+              <button key={p.id} onClick={() => handleProductClick(p)} disabled={saleOrigin.type === "conditional" && !saleDone} className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border transition-all text-left group shadow-sm ${saleOrigin.type === "conditional" && !saleDone ? "border-[#ede4da] bg-[#f8f3ee] cursor-not-allowed opacity-60" : "border-[#b08d57]/10 bg-white hover:border-[#b08d57]/30 hover:bg-[#fdfbf7]"}`}>
+                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg border border-[#f7f2ed]">
+                  <img src={p.images[p.mainImageIndex]} alt={p.name} className="h-full w-full object-cover" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[#2a2421] truncate leading-tight">{p.name}</p>
+                  <p className="text-[10px] font-black text-[#8c6d45]">{fmt(p.price)}</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#a69b8f]">
+                    Disp. {getAvailableStock(p.id, store)}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* ── CENTER: Cart / Current sale ── */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {saleOrigin.type === "conditional" && !saleDone ? (
+            <div className="mx-6 mt-4 rounded-2xl border border-amber-200 bg-amber-50/80 px-5 py-4 text-[#8c6d45] shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em]">Conversão de condicional</p>
+              <p className="mt-1 text-sm font-medium">
+                Os itens vieram da revisão do condicional e ficam travados aqui. Nesta etapa você só conclui o pagamento.
+              </p>
+            </div>
+          ) : null}
+
+          {/* Scan bar */}
+          <div className="px-6 py-3 border-b border-[#b08d57]/10 bg-white flex gap-3 items-center">
+            <div className="flex items-center gap-2 text-[#b08d57]">
+              <Barcode className="h-5 w-5" />
+            </div>
+            <form onSubmit={handleEanInput} className="flex-1 flex gap-2">
+              <input
+                ref={scanInputRef}
+                type="text"
+                placeholder="Código de barras / EAN — pressione F1 para focar"
+                value={eanInput}
+                onChange={e => setEanInput(e.target.value)}
+                autoFocus
+                disabled={saleOrigin.type === "conditional" && !saleDone}
+                className="flex-1 rounded-xl border-2 border-[#b08d57]/20 bg-[#fdfbf7] px-4 py-2 text-sm font-medium text-[#2a2421] placeholder-[#c9bfb5] focus:border-[#8c6d45] focus:outline-none focus:bg-white transition-all disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              <button type="submit" disabled={saleOrigin.type === "conditional" && !saleDone} className="px-5 py-2 rounded-xl bg-[#8c6d45] text-white text-xs font-black uppercase tracking-widest hover:bg-[#725a38] transition-all disabled:bg-[#d8cec3] disabled:cursor-not-allowed">
+                Bipar
+              </button>
+            </form>
+            {saleDone ? (
+              <button onClick={handleNewSale} className="px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-black uppercase tracking-widest hover:bg-green-700 transition-all">
+                Nova Venda
+              </button>
+            ) : null}
+          </div>
+
+          {/* Cart items */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {cart.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-center opacity-30">
+                <ShoppingCart className="h-16 w-16 text-[#b08d57] mb-3" strokeWidth={1} />
+                <p className="text-sm font-medium uppercase tracking-widest text-[#5c4a33]">Aguardando itens</p>
+                <p className="text-xs text-[#a69b8f] mt-1">Bipe um produto ou selecione ao lado</p>
+              </div>
+            )}
+            {cart.map((item) => {
+              const itemSubtotal = item.product.price * item.qty;
+              const itemDiscount = itemSubtotal * (discountPct / 100);
+              const itemFinal = itemSubtotal - itemDiscount;
+              return (
+                <div key={`${item.product.id}-${item.isGift}`} className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${item.isGift ? "border-amber-200 bg-amber-50/40" : "border-[#b08d57]/12 bg-white shadow-sm"}`}>
+                  <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border border-[#f7f2ed]">
+                    <img src={item.product.images[item.product.mainImageIndex]} alt={item.product.name} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif text-base text-[#2a2421] truncate">{item.product.name}</span>
+                      {item.isGift && <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 flex-shrink-0">Presente</span>}
+                      {item.locked && <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#f7f2ed] text-[#8c6d45] border border-[#b08d57]/20 flex-shrink-0">Condicional</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <span className="text-xs text-[#a69b8f] font-medium">{fmt(item.product.price)} × {item.qty}</span>
+                      {discountPct > 0 && <span className="text-[10px] font-bold text-red-600">-{discountPct}%</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => updateQty(item.product.id, -1)}
+                      disabled={item.locked}
+                      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${item.locked ? "bg-[#f3ece5] text-[#c9bfb5] cursor-not-allowed" : "bg-[#f7f2ed] text-[#8c6d45] hover:bg-[#b08d57]/15"}`}
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="w-6 text-center text-sm font-black text-[#2a2421]">{item.qty}</span>
+                    <button
+                      onClick={() => updateQty(item.product.id, 1)}
+                      disabled={item.locked}
+                      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${item.locked ? "bg-[#f3ece5] text-[#c9bfb5] cursor-not-allowed" : "bg-[#8c6d45] text-white hover:bg-[#725a38]"}`}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <div className="text-right w-24 flex-shrink-0">
+                    <p className="font-black text-base text-[#2a2421]">{fmt(itemFinal)}</p>
+                    {discountPct > 0 && <p className="text-[10px] text-[#a69b8f] line-through">{fmt(itemSubtotal)}</p>}
+                  </div>
+                  <button
+                    onClick={() => removeFromCart(item.product.id)}
+                    disabled={item.locked}
+                    className={`p-1.5 rounded-lg transition-all ${item.locked ? "text-[#d7cec4] cursor-not-allowed" : "text-[#a69b8f] hover:bg-red-50 hover:text-red-500"}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Totals & actions */}
+          <div className="border-t-2 border-[#b08d57]/12 bg-white px-6 py-4">
+            {/* Payments done */}
+            {payments.length > 0 && (
+              <div className="mb-3 flex gap-2 flex-wrap">
+                {payments.map((p, i) => (
+                  <span key={i} className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${
+                    p.method === "pix" ? "bg-green-50 text-green-700 border-green-200" :
+                    p.method === "credito" ? "bg-purple-50 text-purple-700 border-purple-200" :
+                    p.method === "debito" ? "bg-blue-50 text-blue-700 border-blue-200" :
+                    p.method === "dinheiro" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                    "bg-orange-50 text-orange-700 border-orange-200"
+                  }`}>
+                    {METHOD_LABEL[p.method]} {fmt(p.amount)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-end justify-between gap-6">
+              {/* Left: discount */}
+              <div className="flex items-center gap-3">
+                <Percent className="h-4 w-4 text-[#b08d57]" />
+                <div>
+                  <label className="text-[9px] font-black uppercase tracking-widest text-[#a69b8f] block">Desconto</label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      value={discountPct}
+                      onChange={e => setDiscountPct(Math.min(100, Math.max(0, Number(e.target.value))))}
+                      className="w-14 rounded-lg border border-[#b08d57]/20 bg-[#fdfbf7] px-2 py-1 text-sm font-black text-[#2a2421] text-center focus:outline-none focus:border-[#8c6d45]"
+                      min={0} max={100} step={1}
+                      disabled={saleDone}
+                    />
+                    <span className="text-sm font-black text-[#5c4a33]">%</span>
+                    {discountPct > 0 && <span className="text-xs font-bold text-red-600">- {fmt(discountAmt)}</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Middle: totals */}
+              <div className="flex items-baseline gap-6">
+                {discountPct > 0 && (
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-[#a69b8f]">Subtotal</p>
+                    <p className="font-serif text-lg text-[#a69b8f] line-through">{fmt(subtotal)}</p>
+                  </div>
+                )}
+                <div className="text-right">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-[#8c6d45]">Total</p>
+                  <p className="font-serif text-3xl text-[#2a2421]">{fmt(total)}</p>
+                </div>
+                {payments.length > 0 && remaining > 0 && (
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Restante</p>
+                    <p className="font-serif text-2xl text-amber-700">{fmt(remaining)}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCpfModal(true)}
+                  title="F2 - Identificar Cliente"
+                  className={`flex items-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${
+                    cpf || selectedClientId 
+                      ? "border-[#8c6d45] bg-[#8c6d45] text-white" 
+                      : "border-[#b08d57]/20 text-[#5c4a33] hover:bg-[#f7f2ed]"
+                  }`}
+                >
+                  <User className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline">{cpf || selectedClientId ? "Identificado" : "Cliente F2"}</span>
+                </button>
+                <button
+                  onClick={handlePrint}
+                  disabled={!saleDone}
+                  title="F10 - Imprimir Recibo"
+                  className={`flex items-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${saleDone ? "border-[#b08d57]/30 text-[#5c4a33] hover:bg-[#f7f2ed]" : "border-[#b08d57]/10 text-[#c9bfb5] cursor-not-allowed"}`}
+                >
+                  <Receipt className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline">Recibo F10</span>
+                </button>
+                <button
+                  onClick={handleNfcePrint}
+                  disabled={!saleDone}
+                  title="F12 - Emitir NFCe"
+                  className={`flex items-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all ${saleDone ? "border-amber-600/30 text-amber-700 hover:bg-amber-50" : "border-[#b08d57]/10 text-[#c9bfb5] cursor-not-allowed"}`}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  <span className="hidden lg:inline">NFCe F12</span>
+                </button>
+                <button
+                  onClick={() => setShowPayment(true)}
+                  disabled={cart.length === 0 || saleDone}
+                  className={`flex items-center gap-2 rounded-xl px-6 py-2.5 text-xs font-black uppercase tracking-widest transition-all ${cart.length > 0 && !saleDone ? "bg-[#8c6d45] text-white hover:bg-[#725a38] shadow-lg shadow-[#8c6d45]/20" : "bg-[#f7f2ed] text-[#c9bfb5] cursor-not-allowed"}`}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {isPaid && !saleDone ? "Ver Pagamento" : "Receber"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* ── RIGHT: Daily summary sidebar ── */}
+        <aside className="w-72 flex-shrink-0 flex flex-col border-l-2 border-[#b08d57]/10 bg-[#faf8f5] overflow-hidden">
+          
+          {/* Day summary */}
+          <div className="px-4 py-3 border-b border-[#b08d57]/10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">Resumo do Dia</p>
+          </div>
+          <div className="px-4 py-3 border-b border-[#b08d57]/10 space-y-1.5">
+            {[
+              { label: "PIX", value: dayPix, color: "text-green-700" },
+              { label: "Crédito", value: dayCc, color: "text-purple-700" },
+              { label: "Débito", value: dayCd, color: "text-blue-700" },
+              { label: "Boleto", value: dayBol, color: "text-orange-700" },
+              { label: "Dinheiro", value: dayDin, color: "text-amber-700" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="flex justify-between items-center text-xs">
+                <span className="font-bold text-[#5c4a33]">{label}</span>
+                <span className={`font-black ${color}`}>{fmt(value)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between items-center pt-1.5 border-t border-[#b08d57]/10">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Total</span>
+              <span className="text-sm font-black text-[#2a2421]">{fmt(dayPix + dayCc + dayCd + dayDin + dayBol)}</span>
+            </div>
+          </div>
+
+          {/* Cash balance */}
+          <div className="px-4 py-3 border-b border-[#b08d57]/10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45] mb-2 flex items-center gap-1.5">
+              <Wallet className="h-3 w-3" /> Dinheiro em Caixa
+            </p>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-[#5c4a33] flex items-center gap-1"><TrendingUp className="h-3 w-3 text-green-600" /> Entradas</span>
+                <span className="font-black text-green-700">{fmt(dayDin)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-[#5c4a33] flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-500" /> Saídas</span>
+                <span className="font-black text-red-600">{fmt(totalExpenses)}</span>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-[#b08d57]/10">
+                <span className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Saldo</span>
+                <span className={`text-base font-black ${cashBalance >= 0 ? "text-green-700" : "text-red-600"}`}>{fmt(cashBalance)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick expense */}
+          <div className="px-4 py-3 border-b border-[#b08d57]/10">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45] mb-2">Lançar Despesa</p>
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleAddExpense(); }}
+              className="space-y-2"
+            >
+              <input
+                type="text"
+                placeholder="Descrição (ex: Boy)"
+                value={expenseLabel}
+                onChange={e => setExpenseLabel(e.target.value)}
+                className="w-full rounded-xl border border-[#b08d57]/20 bg-white px-3 py-1.5 text-xs font-medium text-[#2a2421] placeholder-[#c9bfb5] focus:outline-none focus:border-[#8c6d45]"
+              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder="R$ 0,00"
+                  value={expenseAmount}
+                  onChange={e => setExpenseAmount(e.target.value)}
+                  className="flex-1 rounded-xl border border-[#b08d57]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#2a2421] placeholder-[#c9bfb5] focus:outline-none focus:border-[#8c6d45]"
+                  min="0" step="0.01"
+                />
+                <button 
+                  type="submit"
+                  className="px-3 py-1.5 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase hover:bg-red-700 transition-all"
+                >
+                  <Plus className="h-3.5 w-3.5 rotate-45" />
+                </button>
+              </div>
+            </form>
+
+            {/* Expense list */}
+            {expenses.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {expenses.map(e => (
+                  <button 
+                    key={e.id} 
+                    onClick={() => handleOpenEditExpense(e)}
+                    className="w-full flex justify-between text-[10px] hover:bg-[#b08d57]/10 p-1 rounded transition-colors group"
+                  >
+                    <span className="text-[#a69b8f] truncate mr-2 group-hover:text-[#5c4a33]">{e.label}</span>
+                    <span className="font-black text-red-600 flex-shrink-0">- {fmt(e.amount)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sales log */}
+          <div className="flex-1 overflow-y-auto px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45] mb-2">Vendas do Dia</p>
+            {sales.length === 0 && <p className="text-[10px] text-[#c9bfb5]">Nenhuma venda registrada.</p>}
+            <div className="space-y-1.5">
+              {sales.map(s => (
+                <div key={s.id} className="text-[10px] border border-[#b08d57]/10 rounded-xl px-3 py-2 bg-white">
+                  <div className="flex justify-between font-black text-[#2a2421]">
+                    <span>{s.time}</span>
+                    <span>{fmt(s.total)}</span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[9px] uppercase tracking-widest">
+                    <span className="text-[#8c6d45]">{s.clientName || "Consumidor final"}</span>
+                    <span className={`font-black ${s.originType === "conditional" ? "text-amber-700" : "text-[#a69b8f]"}`}>
+                      {s.originType === "conditional" ? "Condicional" : "Venda direta"}
+                    </span>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap mt-0.5">
+                    {s.payments.map((p, i) => (
+                      <span key={i} className={`font-bold ${METHOD_COLOR[p.method]}`}>{METHOD_LABEL[p.method]}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      {/* ── Gift Alert Modal ── */}
+      {giftAlert && (
+        <GiftAlertModal
+          productName={giftAlert.productName}
+          listName={giftAlert.listName}
+          guestName={giftAlert.guestName}
+          onConfirm={(isGift) => {
+            addToCart(giftAlert.product, isGift, isGift ? giftAlert.listName : undefined);
+            setGiftAlert(null);
+            setPendingCartProduct(null);
+          }}
+          onClose={() => { setGiftAlert(null); setPendingCartProduct(null); }}
+        />
+      )}
+
+      {/* ── Payment Modal ── */}
+      {showPayment && (
+        <PaymentModal
+          remaining={remaining}
+          payments={payments}
+          onAddPayment={handleAddPayment}
+          onClose={() => setShowPayment(false)}
+          onFinalize={handleFinalize}
+        />
+      )}
+
+      {/* ── Client Identification Modal (F2) ── */}
+      {showCpfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#2a2421]/40 backdrop-blur-sm" onClick={() => setShowCpfModal(false)} />
+          <div className="relative w-full max-w-md rounded-[2rem] bg-white border-2 border-[#b08d57]/20 shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex flex-col gap-6">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">Venda Identificada</p>
+                <h2 className="font-serif text-2xl text-[#2a2421] mt-1">Identificar Cliente</h2>
+                <p className="text-xs text-[#a69b8f] mt-1">Vincule esta compra a um CPF ou cliente cadastrado.</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* CPF Input */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">CPF na Nota</label>
+                  <div className="flex items-center gap-2 rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-3 shadow-sm focus-within:border-[#8c6d45] transition-all">
+                    <FileText className="h-4 w-4 text-[#b08d57]" />
+                    <input
+                      type="text"
+                      placeholder="000.000.000-00"
+                      value={cpf}
+                      onChange={e => setCpf(e.target.value)}
+                      className="flex-1 bg-transparent text-base font-bold text-[#2a2421] focus:outline-none placeholder-[#c9bfb5]"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                {/* Customer Dropdown */}
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Cliente Cadastrado</label>
+                  <div className="relative group">
+                    <select
+                      value={selectedClientId}
+                      onChange={e => setSelectedClientId(e.target.value)}
+                      className="w-full appearance-none rounded-2xl border-2 border-[#b08d57]/25 bg-white pl-10 pr-4 py-3 text-sm font-bold text-[#2a2421] focus:outline-none focus:border-[#8c6d45] transition-all cursor-pointer"
+                    >
+                      <option value="">Nenhum - Venda Avulsa</option>
+                      {clients.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#b08d57]" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button onClick={() => setShowCpfModal(false)} className="flex-1 rounded-2xl border-2 border-[#b08d57]/20 py-3.5 text-xs font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all">
+                  Cancelar
+                </button>
+                <button onClick={() => setShowCpfModal(false)} className="flex-1 rounded-2xl bg-[#8c6d45] py-3.5 text-xs font-black uppercase tracking-widest text-white hover:bg-[#725a38] transition-all shadow-lg shadow-[#8c6d45]/20">
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Expense Modal ── */}
+      {editingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#2a2421]/40 backdrop-blur-sm" onClick={() => setEditingExpense(null)} />
+          <div className="relative w-full max-w-sm rounded-[2rem] bg-white border-2 border-[#b08d57]/20 shadow-2xl p-8 animate-in fade-in zoom-in-95 duration-300">
+            <form 
+              onSubmit={(e) => { e.preventDefault(); handleSaveEditExpense(); }}
+              className="flex flex-col gap-4"
+            >
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-600">Ajustar Saída</p>
+                <h2 className="font-serif text-2xl text-[#2a2421] mt-1">Editar Despesa</h2>
+              </div>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Descrição</label>
+                  <input
+                    type="text"
+                    value={editExpenseLabel}
+                    onChange={e => setEditExpenseLabel(e.target.value)}
+                    className="w-full rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-3 text-sm font-bold text-[#2a2421] focus:outline-none focus:border-[#8c6d45]"
+                    autoFocus
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Valor</label>
+                  <div className="flex items-center gap-2 rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-2 shadow-sm">
+                    <span className="text-[#a69b8f] font-bold text-sm">R$</span>
+                    <input
+                      type="number"
+                      value={editExpenseAmount}
+                      onChange={e => setEditExpenseAmount(e.target.value)}
+                      className="flex-1 bg-transparent text-lg font-black text-[#2a2421] focus:outline-none"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 mt-2">
+                <button 
+                  type="submit"
+                  className="w-full rounded-2xl bg-[#8c6d45] py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-[#725a38] transition-all"
+                >
+                  Salvar Alterações
+                </button>
+                <div className="flex gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => setEditingExpense(null)}
+                    className="flex-1 rounded-2xl border-2 border-[#b08d57]/20 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed]"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={handleDeleteExpense}
+                    className="flex-1 rounded-2xl bg-red-50 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-600 hover:bg-red-100"
+                  >
+                    Excluir
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\clientes\page.tsx
+==================================================
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { Client } from "@/types";
+import { CustomerList } from "@/components/customers/CustomerList";
+import { CustomerDetail } from "@/components/customers/CustomerDetail";
+import { addClient, updateClient, useMockStore } from "@/lib/mock-store";
+
+export default function ClientesPage() {
+  const { clients } = useMockStore();
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const selectedClient = clients.find((client) => client.id === selectedClientId) ?? null;
+
+  const handleCreateClient = () => {
+    const newClient: Client = {
+      id: `cliente-${Date.now()}`,
+      name: "Novo Cliente",
+      phone: "",
+      instagram: "",
+      isTrusted: true,
+    };
+    addClient(newClient);
+    setSelectedClientId(newClient.id);
+  };
+
+  const handleUpdateClient = (updatedClient: Client) => {
+    updateClient(updatedClient);
+    setSelectedClientId(updatedClient.id);
+  };
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden bg-[#fefcfb]">
+      {/* Premium Unified Header */}
+      <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-8 z-30 shadow-sm relative">
+        <Link 
+          href="/dashboard"
+          className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group"
+        >
+          <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 group-hover:scale-110 transition-all border-2 border-[#b08d57]/20">
+            <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+          </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </Link>
+        
+        <div className="flex flex-col items-center">
+          <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">LEBLANC</h1>
+          <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Gestão de Clientes</p>
+        </div>
+
+        <button 
+          onClick={handleCreateClient}
+          className="flex items-center gap-2 rounded-full border-2 border-[#b08d57]/20 bg-white px-4 md:px-6 py-2 text-[10px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all"
+        >
+          <UserPlus className="h-4 w-4" />
+          <span className="hidden md:inline">Novo Cliente</span>
+          <span className="md:hidden">Novo</span>
+        </button>
+      </header>
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Side: Customer List - Hidden on mobile when a client is selected */}
+        <aside className={`w-full md:w-80 lg:w-96 flex-shrink-0 z-20 overflow-hidden border-r-2 border-[#b08d57]/10 bg-[#faf8f5] transition-all duration-300 ${
+          selectedClient ? 'hidden md:block' : 'block'
+        }`}>
+          <CustomerList
+            clients={clients}
+            selectedClientId={selectedClient?.id}
+            onSelectClient={(client) => setSelectedClientId(client.id)}
+          />
+        </aside>
+
+        {/* Right Side: Detail Panel - Full screen on mobile when selected */}
+        <main className={`flex-1 overflow-hidden relative z-10 bg-[#fefcfb] transition-all duration-300 ${
+          selectedClient ? 'block' : 'hidden md:block'
+        }`}>
+          {selectedClient ? (
+            <div className="h-full flex flex-col">
+              {/* Mobile Back Button */}
+              <div className="md:hidden p-4 bg-white border-b border-[#b08d57]/10 flex items-center justify-between">
+                <button 
+                  onClick={() => setSelectedClientId(null)}
+                  className="flex items-center gap-2 text-[#8c6d45] font-bold text-xs uppercase tracking-widest"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Lista
+                </button>
+                <div className="text-[10px] font-black text-[#5c4a33] uppercase">Perfil do Cliente</div>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <CustomerDetail 
+                  client={selectedClient} 
+                  onUpdate={handleUpdateClient} 
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="hidden md:flex h-full flex-col items-center justify-center text-center p-12 opacity-50">
+              <CustomerDetail client={null} onUpdate={() => {}} />
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\condicionais\page.tsx
+==================================================
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ClipboardList, Plus, Search } from "lucide-react";
+import { ConditionalCreateModal, type DraftConditionalItem } from "@/components/conditionals/ConditionalCreateModal";
+import { ConditionalDetail } from "@/components/conditionals/ConditionalDetail";
+import { ConditionalReceiptModal } from "@/components/conditionals/ConditionalReceiptModal";
+import { ConditionalReviewModal } from "@/components/conditionals/ConditionalReviewModal";
+import { formatCurrency } from "@/lib/utils";
+import {
+  closeConditionalAsReturned,
+  createConditional,
+  getAvailableStock,
+  getConditionalConvertedValue,
+  getConditionalDerivedStatus,
+  getConditionalValue,
+  markConditionalReceiptPrinted,
+  prepareConditionalCheckout,
+  useMockStore
+} from "@/lib/mock-store";
+import { ConditionalRecord, Product } from "@/types";
+
+const STATUS_LABELS: Record<string, string> = {
+  open: "Em aberto",
+  due_today: "Vence hoje",
+  late: "Atrasado",
+  converted_full: "Venda total",
+  converted_partial: "Venda parcial",
+  returned_full: "Devolvido",
+  canceled: "Cancelado"
+};
+
+const todayPlusDays = (days: number) => {
+  const value = new Date();
+  value.setDate(value.getDate() + days);
+  return value.toISOString().slice(0, 10);
+};
+
+export default function CondicionaisPage() {
+  const router = useRouter();
+  const store = useMockStore();
+  const { clients, products, conditionals, checkoutDraft } = store;
+  const [selectedConditionalId, setSelectedConditionalId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showReceiptForId, setShowReceiptForId] = useState<string | null>(null);
+  const [reviewingConditionalId, setReviewingConditionalId] = useState<string | null>(null);
+  const [draftClientId, setDraftClientId] = useState("");
+  const [draftDueDate, setDraftDueDate] = useState(todayPlusDays(7));
+  const [draftNotes, setDraftNotes] = useState("");
+  const [draftItems, setDraftItems] = useState<DraftConditionalItem[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const queryHandledRef = useRef(false);
+
+  const selectedConditional = conditionals.find((entry) => entry.id === selectedConditionalId) ?? null;
+  const trustedClients = clients.filter((client) => client.isTrusted);
+  const reviewConditional = conditionals.find((entry) => entry.id === reviewingConditionalId) ?? null;
+  const receiptConditional = conditionals.find((entry) => entry.id === showReceiptForId) ?? null;
+
+  useEffect(() => {
+    if (!selectedConditionalId && conditionals.length > 0) {
+      setSelectedConditionalId(conditionals[0].id);
+    }
+  }, [conditionals, selectedConditionalId]);
+
+  useEffect(() => {
+    if (selectedConditionalId && !conditionals.some((entry) => entry.id === selectedConditionalId)) {
+      setSelectedConditionalId(conditionals[0]?.id ?? null);
+    }
+  }, [conditionals, selectedConditionalId]);
+
+  useEffect(() => {
+    if (queryHandledRef.current || typeof window === "undefined" || clients.length === 0) {
+      return;
+    }
+
+    queryHandledRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get("clientId");
+    const action = params.get("action");
+
+    if (!clientId) {
+      return;
+    }
+
+    setDraftClientId(clientId);
+
+    const existingConditional = conditionals.find((entry) => entry.clientId === clientId && entry.status === "open");
+    if (existingConditional) {
+      setSelectedConditionalId(existingConditional.id);
+      return;
+    }
+
+    if (action === "new") {
+      setShowCreateModal(true);
+    }
+  }, [clients.length, conditionals]);
+
+  const filteredConditionals = useMemo(() => {
+    return conditionals.filter((conditional) => {
+      const client = clients.find((entry) => entry.id === conditional.clientId);
+      const haystack = `${client?.name ?? ""} ${conditional.id} ${conditional.notes ?? ""}`.toLowerCase();
+      return haystack.includes(searchTerm.toLowerCase());
+    });
+  }, [clients, conditionals, searchTerm]);
+
+  const metrics = useMemo(() => {
+    const openRecords = conditionals.filter((entry) => entry.status === "open");
+    const dueToday = openRecords.filter((entry) => getConditionalDerivedStatus(entry) === "due_today").length;
+    const late = openRecords.filter((entry) => getConditionalDerivedStatus(entry) === "late").length;
+    const converted = conditionals.filter((entry) => entry.status === "converted_full" || entry.status === "converted_partial").length;
+    const closed = conditionals.filter((entry) => entry.status !== "open").length;
+    const convertedValue = conditionals.reduce((sum, entry) => sum + getConditionalConvertedValue(entry), 0);
+
+    return {
+      open: openRecords.length,
+      dueToday,
+      late,
+      conversionRate: closed > 0 ? Math.round((converted / closed) * 100) : 0,
+      convertedValue
+    };
+  }, [conditionals]);
+
+  const resetDraft = () => {
+    setDraftClientId("");
+    setDraftDueDate(todayPlusDays(7));
+    setDraftNotes("");
+    setDraftItems([]);
+    setSelectedProductId("");
+    setErrorMessage("");
+  };
+
+  const availableStock = (productId: string) => getAvailableStock(productId, store);
+
+  const handleAddDraftItem = (productId = selectedProductId) => {
+    if (!productId) {
+      return;
+    }
+
+    setSelectedProductId(productId);
+    setErrorMessage("");
+    setDraftItems((current) => {
+      const existing = current.find((item) => item.productId === productId);
+      const max = availableStock(productId);
+      if (existing) {
+        return current.map((item) =>
+          item.productId === productId
+            ? { ...item, qtySent: Math.min(max, item.qtySent + 1) }
+            : item
+        );
+      }
+      return [...current, { productId, qtySent: 1 }];
+    });
+  };
+
+  const handleDraftQtyChange = (productId: string, delta: number) => {
+    setDraftItems((current) =>
+      current
+        .map((item) =>
+          item.productId === productId
+            ? { ...item, qtySent: Math.min(availableStock(productId), Math.max(1, item.qtySent + delta)) }
+            : item
+        )
+        .filter((item) => item.qtySent > 0)
+    );
+  };
+
+  const handleCreateConditional = () => {
+    try {
+      const created = createConditional({
+        clientId: draftClientId,
+        dueDate: draftDueDate,
+        notes: draftNotes,
+        items: draftItems
+      });
+
+      setSelectedConditionalId(created.id);
+      setShowCreateModal(false);
+      setShowReceiptForId(created.id);
+      resetDraft();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Não foi possível criar o condicional.");
+    }
+  };
+
+  const handlePrintReceipt = (conditional: ConditionalRecord) => {
+    const client = clients.find((entry) => entry.id === conditional.clientId);
+    const rows = conditional.items
+      .map((item) => {
+        const product = products.find((entry) => entry.id === item.productId);
+        return `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;">${product?.name ?? item.productId}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:center;">${item.qtySent}</td><td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">${formatCurrency(item.unitPrice)}</td></tr>`;
+      })
+      .join("");
+
+    const popup = window.open("", "_blank", "width=820,height=680");
+    if (!popup) {
+      return;
+    }
+
+    popup.document.write(`
+      <html><body style="font-family:Georgia,serif;padding:32px;color:#2a2421;">
+      <h1 style="letter-spacing:0.2em;text-transform:uppercase;">Le Blanc</h1>
+      <p style="font-family:Arial,sans-serif;font-size:12px;letter-spacing:0.25em;text-transform:uppercase;color:#8c6d45;">Recibo de retirada em condicional</p>
+      <p><strong>Cliente:</strong> ${client?.name ?? "-"}</p>
+      <p><strong>Devolução prevista:</strong> ${new Date(`${conditional.dueDate}T00:00:00`).toLocaleDateString("pt-BR")}</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:24px;font-family:Arial,sans-serif;font-size:13px;">
+      <thead><tr><th style="text-align:left;padding-bottom:10px;border-bottom:1px solid #ddd;">Produto</th><th style="text-align:center;padding-bottom:10px;border-bottom:1px solid #ddd;">Qtd.</th><th style="text-align:right;padding-bottom:10px;border-bottom:1px solid #ddd;">Valor</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <p style="margin-top:24px;"><strong>Valor enviado:</strong> ${formatCurrency(getConditionalValue(conditional))}</p>
+      <div style="margin-top:64px;border-top:1px solid #999;padding-top:12px;font-family:Arial,sans-serif;">Assinatura do cliente</div>
+      </body></html>
+    `);
+    popup.document.close();
+    popup.focus();
+    popup.print();
+    markConditionalReceiptPrinted(conditional.id);
+  };
+
+  return (
+    <div className="flex h-screen flex-col bg-[#fdfbf7]">
+      <header className="flex h-20 flex-shrink-0 items-center justify-between border-b-2 border-[#b08d57]/20 bg-white px-6 md:px-10 shadow-sm">
+        <Link href="/dashboard" className="flex items-center gap-3 text-[#2a2421] hover:text-[#8c6d45] transition-all group">
+          <div className="rounded-full bg-[#b08d57]/10 p-2.5 group-hover:bg-[#b08d57]/20 transition-all border-2 border-[#b08d57]/20">
+            <ArrowLeft className="h-4 w-4 stroke-[3px]" />
+          </div>
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.2em]">Voltar</span>
+        </Link>
+
+        <div className="flex flex-col items-center">
+          <h1 className="font-serif text-3xl text-[#2a2421] tracking-[0.25em] uppercase">LEBLANC</h1>
+          <div className="h-[2px] w-12 bg-[#8c6d45] my-1" />
+          <p className="text-[10px] uppercase tracking-[0.5em] text-[#8c6d45] font-extrabold">Gestão de Condicionais</p>
+        </div>
+
+        <button
+          onClick={() => {
+            resetDraft();
+            setShowCreateModal(true);
+          }}
+          className="flex items-center gap-2 rounded-full bg-[#8c6d45] px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.25em] text-white shadow-lg shadow-[#8c6d45]/20 hover:bg-[#725a38] transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          Novo condicional
+        </button>
+      </header>
+
+      <section className="grid gap-4 border-b border-[#b08d57]/10 bg-white/70 px-6 py-5 md:grid-cols-4 md:px-10">
+        <MetricCard label="Em aberto" value={String(metrics.open)} />
+        <MetricCard label="Vencem hoje" value={String(metrics.dueToday)} />
+        <MetricCard label="Atrasados" value={String(metrics.late)} />
+        <MetricCard label="Valor convertido" value={formatCurrency(metrics.convertedValue)} />
+      </section>
+
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-full max-w-md flex-shrink-0 border-r-2 border-[#b08d57]/10 bg-white">
+          <div className="border-b border-[#b08d57]/10 p-5">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a69b8f] group-focus-within:text-[#b08d57] transition-colors" />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar cliente ou observação..."
+                className="w-full rounded-2xl border-2 border-[#b08d57]/20 bg-[#fefcfb] py-3 pl-11 pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+              />
+            </div>
+          </div>
+
+          <div className="h-full overflow-y-auto p-3 space-y-2 custom-scrollbar">
+            {filteredConditionals.map((conditional) => {
+              const client = clients.find((entry) => entry.id === conditional.clientId);
+              const derivedStatus = getConditionalDerivedStatus(conditional);
+              const isSelected = conditional.id === selectedConditionalId;
+
+              return (
+                <button
+                  key={conditional.id}
+                  onClick={() => setSelectedConditionalId(conditional.id)}
+                  className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+                    isSelected
+                      ? "border-[#8c6d45] bg-[#8c6d45] text-white shadow-xl shadow-[#8c6d45]/20"
+                      : "border-[#b08d57]/15 bg-white hover:border-[#b08d57]/40 hover:bg-[#fdfbf7] shadow-sm"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className={`font-serif text-2xl truncate ${isSelected ? "text-white" : "text-[#2a2421]"}`}>
+                        {client?.name ?? "Cliente"}
+                      </p>
+                      <p className={`mt-1 text-[10px] font-black uppercase tracking-[0.25em] ${isSelected ? "text-white/75" : "text-[#8c6d45]"}`}>
+                        {STATUS_LABELS[derivedStatus]}
+                      </p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest ${
+                      isSelected ? "bg-white/15 text-white border border-white/20" : "bg-[#f7f2ed] text-[#8c6d45] border border-[#b08d57]/20"
+                    }`}>
+                      {formatCurrency(getConditionalValue(conditional))}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {filteredConditionals.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center opacity-40">
+                <ClipboardList className="mb-4 h-14 w-14 text-[#8c6d45]" />
+                <p className="text-sm font-bold uppercase tracking-[0.25em] text-[#5c4a33]">Nenhum condicional</p>
+              </div>
+            ) : null}
+          </div>
+        </aside>
+
+        <main className="flex-1 overflow-y-auto custom-scrollbar">
+          {selectedConditional ? (
+            <ConditionalDetail
+              conditional={selectedConditional}
+              client={clients.find((entry) => entry.id === selectedConditional.clientId) ?? null}
+              products={products}
+              checkoutDraftId={checkoutDraft?.originId}
+              onOpenReceipt={() => setShowReceiptForId(selectedConditional.id)}
+              onOpenReview={() => setReviewingConditionalId(selectedConditional.id)}
+              onGoToCheckout={() => router.push("/caixa")}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center p-12 text-center opacity-40">
+              <div>
+                <ClipboardList className="mx-auto mb-5 h-16 w-16 text-[#8c6d45]" />
+                <h2 className="font-serif text-4xl text-[#2a2421]">Selecione um condicional</h2>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {showCreateModal ? (
+        <ConditionalCreateModal
+          trustedClients={trustedClients}
+          products={products}
+          availableStock={availableStock}
+          clientId={draftClientId}
+          dueDate={draftDueDate}
+          notes={draftNotes}
+          items={draftItems}
+          selectedProductId={selectedProductId}
+          errorMessage={errorMessage}
+          onClose={() => setShowCreateModal(false)}
+          onClientChange={setDraftClientId}
+          onDueDateChange={setDraftDueDate}
+          onNotesChange={setDraftNotes}
+          onSelectedProductChange={setSelectedProductId}
+          onAddItem={handleAddDraftItem}
+          onQtyChange={handleDraftQtyChange}
+          onSubmit={handleCreateConditional}
+        />
+      ) : null}
+
+      {reviewConditional ? (
+        <ConditionalReviewModal
+          conditional={reviewConditional}
+          products={products}
+          onClose={() => setReviewingConditionalId(null)}
+          onConfirm={(soldQuantities) => {
+            const totalSold = Object.values(soldQuantities).reduce((sum, qty) => sum + qty, 0);
+            if (totalSold === 0) {
+              closeConditionalAsReturned(reviewConditional.id, soldQuantities);
+              setReviewingConditionalId(null);
+              return;
+            }
+
+            prepareConditionalCheckout({ conditionalId: reviewConditional.id, soldQuantities });
+            setReviewingConditionalId(null);
+            router.push("/caixa");
+          }}
+        />
+      ) : null}
+
+      {receiptConditional ? (
+        <ConditionalReceiptModal
+          conditional={receiptConditional}
+          client={clients.find((entry) => entry.id === receiptConditional.clientId) ?? null}
+          products={products}
+          onClose={() => setShowReceiptForId(null)}
+          onPrint={() => handlePrintReceipt(receiptConditional)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[2rem] border border-[#b08d57]/15 bg-white p-5 shadow-sm">
+      <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8c6d45]">{label}</p>
+      <p className="mt-3 font-serif text-3xl text-[#2a2421]">{value}</p>
+    </div>
+  );
+}
+

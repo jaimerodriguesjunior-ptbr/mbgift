@@ -1,0 +1,400 @@
+=== CONTEÚDO PARCIAL: 2_COMPONENTES_VISUAIS_PARTE_E.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\components\layout\Header.tsx
+==================================================
+import Link from "next/link";
+
+import { navigation, tenant } from "@/lib/mock-data";
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-30 border-b border-white/35 bg-[rgba(247,242,237,0.36)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/dashboard" className="inline-flex items-center gap-3">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/55 bg-white/45 shadow-[0_10px_30px_rgba(166,155,143,0.12)] backdrop-blur-md">
+              <div className="text-center">
+                <div className="font-serif text-2xl leading-none text-ink">LB</div>
+                <div className="mt-1 text-[8px] uppercase tracking-[0.42em] text-black/45">Presentes</div>
+              </div>
+            </div>
+            <div>
+              <p className="font-serif text-2xl text-ink">{tenant.shortName}</p>
+              <p className="text-xs uppercase tracking-[0.28em] text-black/40">Presentes</p>
+            </div>
+          </Link>
+          <div className="hidden rounded-full border border-white/55 bg-white/38 px-4 py-2 text-xs uppercase tracking-[0.24em] text-black/50 backdrop-blur-md sm:block">
+            {tenant.name}
+          </div>
+        </div>
+        <nav className="flex gap-2 overflow-x-auto pb-1">
+          {navigation.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="inline-flex min-w-fit items-center rounded-full border border-white/60 bg-white/40 px-4 py-2 text-xs font-medium uppercase tracking-[0.22em] text-ink backdrop-blur-md transition hover:bg-white/58"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\listas\GiftListDetail.tsx
+==================================================
+"use client";
+
+import { Calendar, MapPin, ExternalLink, Gift, Search, MoreVertical, Plus, Check, ShoppingBag, ArrowLeft, Trash2, Eye, Settings } from "lucide-react";
+import { useState, useEffect } from "react";
+import { GiftList, Product, GiftItemStatus, GiftListItem } from "@/types";
+import { giftLists as initialLists, products as allProducts } from "@/lib/mock-data";
+
+interface GiftListDetailProps {
+  list: GiftList | null;
+  onUpdate: (list: GiftList) => void;
+}
+
+export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
+  const [formData, setFormData] = useState<GiftList | null>(list);
+
+  useEffect(() => {
+    setFormData(list);
+  }, [list]);
+
+  if (!list || !formData) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-12 text-center opacity-30 bg-[#fefcfb]">
+        <Gift className="h-20 w-20 mb-4 stroke-1 text-[#8c6d45]" />
+        <h3 className="font-serif text-2xl text-[#2a2421]">Nenhuma lista selecionada</h3>
+        <p className="max-w-xs mt-3 text-sm font-medium uppercase tracking-[0.2em] text-[#8c6d45]">
+          Selecione uma lista de presentes ao lado para visualizar os itens e detalhes.
+        </p>
+      </div>
+    );
+  }
+
+  // Helper to get product details
+  const getProduct = (productId: string): Product | undefined => {
+    return allProducts.find(p => p.id === productId);
+  };
+
+  const statusColors = {
+    disponivel: "bg-green-100 text-green-700 border-green-200",
+    reservado: "bg-amber-100 text-amber-700 border-amber-200",
+    comprado: "bg-blue-100 text-blue-700 border-blue-200"
+  };
+
+  const statusLabels: Record<GiftItemStatus, string> = {
+    disponivel: "Disponível",
+    reservado: "Reservado",
+    comprado: "Comprado"
+  };
+
+  return (
+    <div className="flex h-full flex-col bg-white overflow-hidden custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-700">
+      {/* Detail Header - Premium Boutique Style */}
+      <div className="flex flex-col md:flex-row items-center md:items-end justify-between px-8 pt-8 md:px-12 md:pt-14 border-b border-[#b08d57]/10 pb-10 bg-[#fdfbf7]/50 relative overflow-hidden group">
+        {/* Background Image Accent */}
+        <div className="absolute top-0 right-0 w-1/3 h-full opacity-[0.03] pointer-events-none select-none overflow-hidden">
+          <img src={formData.photo} className="w-full h-full object-cover grayscale" alt="" />
+        </div>
+
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 z-10">
+          <div className="relative">
+            <div className="relative h-28 w-28 md:h-36 md:w-36 overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl rotate-2 transition-transform hover:rotate-0 duration-500">
+              <img
+                src={formData.photo}
+                className="h-full w-full object-cover scale-110"
+                alt={formData.brideName}
+              />
+            </div>
+            <div className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full bg-[#8c6d45] border-4 border-white flex items-center justify-center text-white shadow-lg">
+              <Gift className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
+            <h2 className="font-serif text-4xl md:text-6xl text-[#2a2421] tracking-tight mb-2 leading-tight">
+              {formData.brideName}
+            </h2>
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#8c6d45]">
+                <Calendar className="h-4 w-4" />
+                {new Date(formData.eventDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </div>
+              <div className="h-1.5 w-1.5 rounded-full bg-[#b08d57]/20" />
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#8c6d45]">
+                <MapPin className="h-4 w-4" />
+                {formData.city}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Global Stats / Actions */}
+        <div className="mt-8 md:mt-0 flex gap-4 z-10 self-center md:self-end">
+          <a 
+            href={`/lista/${formData.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 rounded-full bg-white border-2 border-[#b08d57]/20 px-8 py-3 text-[11px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm group"
+          >
+            <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+            Ver Lista Pública
+          </a>
+          <button className="flex items-center gap-3 rounded-full bg-[#8c6d45] px-10 py-3 text-[11px] font-black uppercase tracking-widest text-white shadow-xl shadow-[#8c6d45]/20 hover:bg-[#725a38] hover:scale-105 active:scale-95 transition-all">
+            <Plus className="h-4 w-4" />
+            Adicionar Item
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+        {/* Items Management List */}
+        <div className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar border-r border-[#b08d57]/10">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="font-serif text-3xl text-[#2a2421]">Itens Escolhidos</h3>
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-[#8c6d45]/10 text-[#8c6d45] rounded-full text-[10px] font-black uppercase tracking-widest leading-none">
+                {formData.items.length} ITENS
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {formData.items.map((item: GiftListItem) => {
+              const product = getProduct(item.productId);
+              return (
+                <div 
+                  key={item.id}
+                  className="group flex flex-col sm:flex-row items-center gap-6 p-4 rounded-[2rem] border-2 border-[#b08d57]/10 bg-[#fdfbf7]/30 hover:bg-white hover:border-[#8c6d45]/20 hover:shadow-xl hover:shadow-[#8c6d45]/5 transition-all duration-500"
+                >
+                  <div className="relative h-24 w-24 sm:h-20 sm:w-20 overflow-hidden rounded-2xl shadow-sm border-2 border-white group-hover:scale-105 transition-transform">
+                    <img 
+                      src={product?.images[0]} 
+                      className="h-full w-full object-cover" 
+                      alt={product?.name} 
+                    />
+                  </div>
+
+                  <div className="flex-1 text-center sm:text-left space-y-2">
+                    <h4 className="font-serif text-lg text-[#2a2421] leading-tight mb-1">{product?.name}</h4>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">R$ {product?.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div className="h-1 w-1 rounded-full bg-[#b08d57]/30" />
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${statusColors[item.status]}`}>
+                        {statusLabels[item.status]}
+                      </span>
+                    </div>
+                    {item.guestName && (
+                      <div className="mt-3 p-3 rounded-xl bg-white/50 border border-[#b08d57]/10 flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[#2a2421] flex items-center gap-1.5">
+                          <Check className="h-3 w-3 text-green-600" />
+                          Reservado por: {item.guestName}
+                        </span>
+                        {item.guestMessage && (
+                          <p className="text-[10px] italic text-[#8c6d45] leading-relaxed">
+                            "{item.guestMessage}"
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button className="h-10 w-10 rounded-full bg-white border border-[#b08d57]/10 flex items-center justify-center text-[#8c6d45] hover:bg-[#8c6d45] hover:text-white transition-all shadow-sm">
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button className="h-10 w-10 rounded-full bg-white border border-[#b08d57]/10 flex items-center justify-center text-[#8c6d45] hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all shadow-sm">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    <button className="h-10 w-10 rounded-full bg-white border border-[#b08d57]/10 flex items-center justify-center text-[#8c6d45] hover:bg-[#f7f2ed] transition-all shadow-sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* List Info / Side Info */}
+        <aside className="hidden lg:block w-96 p-12 bg-[#fdfbf7]/50 space-y-10 overflow-y-auto custom-scrollbar">
+          <section className="space-y-4">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#8c6d45] mb-6">Mensagem da Lista</h4>
+            <div className="p-8 rounded-[2.5rem] bg-white border-2 border-[#b08d57]/10 relative italic font-serif text-[#5c4a33] text-lg leading-relaxed shadow-sm">
+              <span className="absolute -top-4 -left-2 text-6xl text-[#b08d57]/20 leading-none">“</span>
+              {formData.headline}
+              <span className="absolute -bottom-10 -right-2 text-6xl text-[#b08d57]/20 leading-none rotate-180">“</span>
+            </div>
+          </section>
+
+          <section className="space-y-6 pt-6 border-t border-[#b08d57]/10">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">Atalhos Rápidos</h4>
+            <div className="space-y-3">
+              <a 
+                href={`/lista/${formData.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-[#b08d57]/10 hover:border-[#b08d57]/30 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-[#f7f2ed] flex items-center justify-center text-[#8c6d45]">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#2a2421]">Página dos Convidados</span>
+                </div>
+                <ExternalLink className="h-3 w-3 text-[#b08d57]/40 group-hover:text-[#8c6d45]" />
+              </a>
+              
+              <a 
+                href={`/lista/${formData.slug}/editar?token=demo-token`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-[#b08d57]/10 hover:border-[#b08d57]/30 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-[#2a2421] flex items-center justify-center text-white">
+                    <Settings className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#2a2421]">Painel do Anfitrião</span>
+                </div>
+                <ExternalLink className="h-3 w-3 text-[#b08d57]/40 group-hover:text-[#8c6d45]" />
+              </a>
+            </div>
+          </section>
+
+          <section className="space-y-6 pt-6 border-t border-[#b08d57]/10">
+            <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">Desempenho da Lista</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-6 rounded-3xl bg-white border border-[#b08d57]/10 shadow-sm">
+                <span className="block text-[8px] font-black uppercase tracking-widest text-[#a69b8f] mb-2 text-center">Itens Comprados</span>
+                <p className="text-3xl font-serif text-[#2a2421] text-center">
+                  {formData.items.filter((i: GiftListItem) => i.status === "comprado").length}
+                </p>
+              </div>
+              <div className="p-6 rounded-3xl bg-white border border-[#b08d57]/10 shadow-sm">
+                <span className="block text-[8px] font-black uppercase tracking-widest text-[#a69b8f] mb-2 text-center text-balance">Valor Total Estimado</span>
+                <p className="text-xl font-serif text-[#8c6d45] text-center">
+                  R$ {formData.items.reduce((acc: number, item: GiftListItem) => acc + (getProduct(item.productId)?.price || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                </p>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      {/* Mobile Actions Sidebar / Overlay could go here, but focusing on main detail for now */}
+    </div>
+  );
+}
+
+
+
+==================================================
+ARQUIVO: .\src\components\listas\GiftListMaster.tsx
+==================================================
+"use client";
+
+import { Search, Calendar, ChevronRight, Gift } from "lucide-react";
+import { useState } from "react";
+import type { GiftList } from "@/lib/mock-data";
+
+interface GiftListMasterProps {
+  lists: GiftList[];
+  selectedListId?: string;
+  onSelectList: (list: GiftList) => void;
+}
+
+export function GiftListMaster({ lists, selectedListId, onSelectList }: GiftListMasterProps) {
+  const [search, setSearch] = useState("");
+
+  const filteredLists = lists.filter((list) =>
+    list.brideName.toLowerCase().includes(search.toLowerCase()) ||
+    list.city.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-white">
+      {/* Search Header */}
+      <div className="p-6 border-b border-[#b08d57]/10">
+        <div className="relative group">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8c6d45] group-focus-within:text-[#2a2421] transition-colors">
+            <Search className="h-5 w-5" />
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar lista ou cidade..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-2xl border-2 border-[#b08d57]/10 bg-[#fdfbf7] py-3.5 pl-12 pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all"
+          />
+        </div>
+      </div>
+
+      {/* Lists Scroll Area */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+        {filteredLists.map((list) => (
+          <button
+            key={list.id}
+            onClick={() => onSelectList(list)}
+            className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all duration-500 text-left group border-2 ${
+              selectedListId === list.id
+                ? "bg-[#8c6d45] border-[#8c6d45] text-white shadow-xl shadow-[#8c6d45]/20 scale-[1.02] z-10"
+                : "bg-white border-[#b08d57]/15 hover:border-[#b08d57]/40 hover:bg-[#fdfbf7] shadow-sm hover:shadow-md text-[#2a2421]"
+            }`}
+          >
+            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-2xl border-4 border-white shadow-md group-hover:rotate-3 transition-transform duration-500">
+              <img
+                src={list.photo}
+                alt={list.brideName}
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            <div className="flex-1 overflow-hidden">
+              <div className="flex items-center justify-between mb-0.5">
+                <h3 className={`font-serif text-lg truncate ${selectedListId === list.id ? "text-white" : "text-[#2a2421]"}`}>
+                  {list.brideName}
+                </h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest ${selectedListId === list.id ? "text-white/80" : "text-[#5c4a33]"}`}>
+                  <Calendar className="h-3 w-3" />
+                  {new Date(list.eventDate).toLocaleDateString('pt-BR')}
+                </div>
+                <div className={`h-1 w-1 rounded-full ${selectedListId === list.id ? "bg-white/30" : "bg-[#b08d57]/40"}`} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${selectedListId === list.id ? "text-white/60" : "text-[#8c6d45]"}`}>
+                  {list.items.length} itens
+                </span>
+              </div>
+            </div>
+
+            <ChevronRight className={`h-5 w-5 transition-transform duration-500 group-hover:translate-x-1 ${
+              selectedListId === list.id ? "text-white/40" : "text-[#b08d57]/50"
+            }`} />
+          </button>
+        ))}
+
+        {filteredLists.length === 0 && (
+          <div className="p-12 text-center opacity-40">
+            <Gift className="h-12 w-12 mx-auto mb-4 text-[#8c6d45]" />
+            <p className="font-medium text-[#8c6d45] uppercase tracking-widest text-xs leading-relaxed">
+              Nenhuma lista encontrada para sua busca.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

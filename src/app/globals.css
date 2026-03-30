@@ -1,0 +1,231 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  --color-ink: #2a2421;
+  --color-gold: #b08d57;
+  --color-cream: #f7f2ed;
+  --color-beige: #eadfd7;
+  --color-sand: #d9c9b7;
+  --color-taupe: #a69b8f;
+  color-scheme: light;
+}
+
+html {
+  min-height: 100%;
+  background-color: #f7f2ed;
+}
+
+/* Moved from html::before to specific class for isolation */
+.bg-dashboard-boutique::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  background-image: url("/mesaposta.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 1.0;
+  transform: scale(1.1);
+  pointer-events: none;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--color-ink);
+  background: transparent;
+  background-attachment: fixed;
+  line-height: 1.7;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-serif {
+  font-family: var(--font-serif), serif;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: rgba(176, 141, 87, 0.15);
+  color: var(--color-ink);
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .glass-premium {
+    @apply border border-white/50;
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow: 0 8px 32px rgba(166, 155, 143, 0.1);
+    backdrop-filter: blur(18px);
+  }
+
+  .text-gold-gradient {
+    @apply bg-gradient-to-r from-[#b08d57] via-[#d9c9b7] to-[#b08d57] bg-clip-text text-transparent;
+  }
+
+  .border-premium {
+    @apply border border-black/[0.04];
+  }
+
+  .shadow-premium {
+    @apply shadow-[0_20px_50px_rgba(166, 155, 143, 0.12)];
+  }
+
+  .hover-lift {
+    @apply transition-all duration-700 hover:-translate-y-2;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    box-shadow: 0 20px 50px rgba(166, 155, 143, 0.12);
+  }
+
+  .page-shell {
+    @apply mx-auto max-w-7xl px-4 pb-14 pt-8 sm:px-6 lg:px-8;
+  }
+
+  .hero-panel {
+    @apply rounded-[2.5rem] border border-white/45 p-6 sm:p-8;
+    background: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 20px 60px rgba(166, 155, 143, 0.14);
+    backdrop-filter: blur(14px);
+  }
+
+  .surface-card {
+    @apply rounded-[2rem] border border-white/55;
+    background: rgba(255, 255, 255, 0.58);
+    box-shadow: 0 14px 36px rgba(166, 155, 143, 0.12);
+    backdrop-filter: blur(12px);
+  }
+
+  .bg-dashboard-home {
+    @apply min-h-screen w-full flex items-center justify-center p-6 sm:p-12;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  .bg-dashboard-home::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    z-index: 0;
+  }
+
+  .bg-dashboard-boutique, .bg-pos-boutique, .bg-crm-boutique, .bg-products-boutique {
+    @apply relative min-h-screen w-full;
+    background: transparent;
+    z-index: 0;
+    isolation: isolate;
+  }
+
+  /* PDV (Sales) Background */
+  .bg-pos-boutique::before {
+    content: "";
+    position: absolute;
+    inset: -1.5%;
+    z-index: -1;
+    background-color: #fdfbf7;
+    background-image: url("/venda_premium.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(8px);
+    opacity: 1;
+    transform: scale(1.03);
+    pointer-events: none;
+  }
+
+  /* CRM (Customers) Background */
+  .bg-crm-boutique::before {
+    content: "";
+    position: absolute;
+    inset: -1.5%;
+    z-index: -1;
+    background-color: #fdfbf7;
+    background-image: url("/clientes_premium.png");
+    background-size: cover;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    filter: blur(8px);
+    opacity: 1;
+    transform: scale(1.03);
+    pointer-events: none;
+  }
+
+  /* Products / Stock Background */
+  .bg-products-boutique::before {
+    content: "";
+    position: absolute;
+    inset: -1.5%;
+    z-index: -1;
+    background-color: #fdfbf7;
+    background-image: url("/estoque_premium.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(8px);
+    opacity: 1;
+    transform: scale(1.03);
+    pointer-events: none;
+  }
+
+  .premium-glass-box {
+    @apply relative z-10 w-full max-w-5xl rounded-[3.5rem] p-8 sm:p-14;
+    background: rgba(255, 255, 255, 0.22);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    box-shadow:
+      50px 60px 140px rgba(0, 0, 0, 0.5),
+      /* Intense black shadow to the RIGHT */
+      inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Custom Swirl Animations */
+  @keyframes swirl {
+
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(0deg) scale(1);
+    }
+
+    33% {
+      transform: translate(2%, 1%) rotate(0.5deg) scale(1.02);
+    }
+
+    66% {
+      transform: translate(-1%, 2%) rotate(-0.5deg) scale(0.98);
+    }
+  }
+
+  .animate-swirl-slow {
+    animation: swirl 20s ease-in-out infinite;
+  }
+
+  .animate-swirl-slower {
+    animation: swirl 30s ease-in-out infinite reverse;
+  }
+}

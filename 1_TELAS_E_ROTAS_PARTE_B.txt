@@ -1,0 +1,335 @@
+=== CONTEÚDO PARCIAL: 1_TELAS_E_ROTAS_PARTE_B.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\configuracoes\page.tsx
+==================================================
+"use client";
+
+import { useState } from "react";
+import { ArrowLeft, Building2, MapPin, ShieldCheck, Save, Globe, Phone, Mail, Hash } from "lucide-react";
+import Link from "next/link";
+
+export default function ConfiguracoesPage() {
+  const [activeTab, setActiveTab] = useState("empresa");
+
+  const inputClass = "w-full rounded-xl border-2 border-[#b08d57]/25 bg-white px-4 py-2.5 text-sm font-bold text-[#2a2421] shadow-sm focus:outline-none focus:border-[#8c6d45] focus:ring-1 focus:ring-[#8c6d45]/20 transition-all placeholder:text-[#a69b8f]/40";
+  const selectClass = "w-full appearance-none rounded-xl border-2 border-[#b08d57]/25 bg-white px-4 py-2.5 text-sm font-bold text-[#2a2421] shadow-sm focus:outline-none focus:border-[#8c6d45] transition-all cursor-pointer";
+  const labelClass = "text-[10px] font-black uppercase tracking-widest text-[#5c4a33] ml-1 mb-1.5 block";
+
+  return (
+    <main className="h-screen bg-[#faf8f5] flex flex-col overflow-hidden">
+      {/* ─── Compact Header ─────────────────────────────────────── */}
+      <header className="flex items-center justify-between px-8 py-4 bg-white border-b border-[#b08d57]/10 z-10 shadow-sm">
+        <div className="flex items-center gap-6">
+          <Link 
+            href="/dashboard"
+            className="h-9 w-9 flex items-center justify-center rounded-full border border-[#b08d57]/20 text-[#8c6d45] hover:bg-[#f7f2ed] transition-all"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="flex flex-col">
+            <h1 className="font-serif text-xl text-[#2a2421] leading-none">Configurações</h1>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#a69b8f] mt-1">Dados da Empresa & Fiscal</p>
+          </div>
+        </div>
+        <button className="flex items-center gap-2 px-6 py-2 bg-[#8c6d45] text-white rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#725a38] transition-all shadow-lg shadow-[#8c6d45]/20 active:scale-95 transition-transform">
+          <Save className="h-3.5 w-3.5" />
+          Salvar
+        </button>
+      </header>
+
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* ─── Slim Sidebar ────────────────────────── */}
+        <aside className="w-full md:w-64 bg-white border-r border-[#b08d57]/10 p-6 overflow-y-auto">
+          <nav className="space-y-1">
+            <button 
+              onClick={() => setActiveTab("empresa")}
+              className={`w-full flex items-center gap-3 px-5 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-[0.1em] transition-all text-left ${
+                activeTab === 'empresa' 
+                ? 'bg-[#8c6d45] text-white shadow-lg shadow-[#8c6d45]/20' 
+                : 'bg-white text-[#5c4a33] border border-[#b08d57]/10 hover:border-[#b08d57]/30 hover:bg-[#f7f2ed]'
+              }`}
+            >
+              <Building2 className={`h-3.5 w-3.5 ${activeTab === 'empresa' ? 'text-white' : 'text-[#b08d57]'}`} />
+              Empresa
+            </button>
+            <div className="px-5 py-3 opacity-30 cursor-not-allowed">
+               <p className="text-[9px] font-bold text-[#a69b8f] uppercase tracking-widest">Em breve</p>
+            </div>
+          </nav>
+        </aside>
+
+        {/* ─── Main Content Area (Scrollable) ─────────────── */}
+        <div className="flex-1 bg-[#faf8f5] overflow-y-auto">
+          <div className="max-w-6xl p-8 md:p-10 space-y-10 pb-32 animate-in fade-in slide-in-from-right-2 duration-500">
+            
+            {activeTab === "empresa" && (
+              <div className="space-y-12">
+                
+                {/* 1. Identificação Fiscal */}
+                <section>
+                  <div className="flex items-center gap-3 mb-6 pb-2 border-b border-[#b08d57]/20">
+                    <Building2 className="h-5 w-5 text-[#8c6d45]" />
+                    <h2 className="font-serif text-lg text-[#2a2421]">Identificação Fiscal</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-5">
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>Razão Social</label>
+                      <input type="text" placeholder="Ex: Loft Le Blanc Boutique LTDA" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>Nome Fantasia</label>
+                      <input type="text" placeholder="Le Blanc Boutique" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>CNPJ</label>
+                      <input type="text" placeholder="00.000.000/0000-00" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>Inscrição Estadual</label>
+                      <input type="text" placeholder="Número da Inscrição" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>Inscrição Municipal</label>
+                      <input type="text" placeholder="Número da Inscrição" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>Regime Tributário</label>
+                      <select className={selectClass}>
+                        <option>Simples Nacional</option>
+                        <option>Lucro Presumido</option>
+                        <option>Lucro Real</option>
+                      </select>
+                    </div>
+                  </div>
+                </section>
+
+                {/* 2. Endereço */}
+                <section>
+                  <div className="flex items-center gap-3 mb-6 pb-2 border-b border-[#b08d57]/20">
+                    <MapPin className="h-5 w-5 text-[#8c6d45]" />
+                    <h2 className="font-serif text-lg text-[#2a2421]">Loja (Endereço)</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-6 gap-y-5">
+                    <div className="md:col-span-2 space-y-1">
+                      <label className={labelClass}>CEP</label>
+                      <input type="text" placeholder="00000-000" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-4 lg:col-span-6 space-y-1">
+                      <label className={labelClass}>Logradouro</label>
+                      <input type="text" placeholder="Rua / Avenida / Alameda" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-1 lg:col-span-2 space-y-1">
+                      <label className={labelClass}>Número</label>
+                      <input type="text" placeholder="Núm." className={inputClass} />
+                    </div>
+                    <div className="md:col-span-1 lg:col-span-2 space-y-1">
+                      <label className={labelClass}>Comp.</label>
+                      <input type="text" placeholder="Apto/Loja" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 lg:col-span-4 space-y-1">
+                      <label className={labelClass}>Bairro</label>
+                      <input type="text" placeholder="Nome do Bairro" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-3 lg:col-span-5 space-y-1">
+                      <label className={labelClass}>Cidade</label>
+                      <input type="text" placeholder="Nome da Cidade" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-1 lg:col-span-1 space-y-1">
+                      <label className={labelClass}>UF</label>
+                      <input type="text" placeholder="UF" className={inputClass} />
+                    </div>
+                    <div className="md:col-span-2 lg:col-span-2 space-y-1">
+                      <label className={labelClass}>Cód. IBGE</label>
+                      <input type="text" placeholder="Município" className={inputClass} />
+                    </div>
+                  </div>
+                </section>
+
+                {/* 3. Ajustes Fiscais */}
+                <section className="pb-20">
+                  <div className="flex items-center gap-3 mb-6 pb-2 border-b border-red-600/30">
+                    <ShieldCheck className="h-5 w-5 text-red-600" />
+                    <h2 className="font-serif text-lg text-[#2a2421]">Fiscal NFC-e</h2>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Homologação */}
+                    <div className="md:col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 p-5 rounded-2xl bg-white border-2 border-amber-200/50 shadow-sm transition-all focus-within:border-amber-400">
+                       <div className="col-span-2 flex items-center gap-2 mb-1">
+                         <div className="h-2 w-2 rounded-full bg-amber-500" />
+                         <p className="text-[9px] font-black uppercase tracking-widest text-[#8c6d45]">Ambiente de Homologação (Testes)</p>
+                       </div>
+                       <div className="space-y-1 text-left">
+                         <label className={labelClass}>CSC Token</label>
+                         <input type="password" value="••••••••••••••••" className={inputClass} />
+                       </div>
+                       <div className="space-y-1 text-left">
+                         <label className={labelClass}>CSC ID</label>
+                         <input type="text" placeholder="ID" className={inputClass} />
+                       </div>
+                    </div>
+
+                    {/* Produção */}
+                    <div className="md:col-span-2 grid grid-cols-2 gap-x-6 gap-y-4 p-5 rounded-2xl bg-white border-2 border-red-200/50 shadow-sm transition-all focus-within:border-red-400">
+                       <div className="col-span-2 flex items-center gap-2 mb-1">
+                         <div className="h-2 w-2 rounded-full bg-red-600" />
+                         <p className="text-[9px] font-black uppercase tracking-widest text-red-600">Ambiente de Produção (Real)</p>
+                       </div>
+                       <div className="space-y-1 text-left">
+                         <label className={labelClass}>CSC Token</label>
+                         <input type="password" placeholder="Token de Produção" className={inputClass} />
+                       </div>
+                       <div className="space-y-1 text-left">
+                         <label className={labelClass}>CSC ID</label>
+                         <input type="text" placeholder="ID" className={inputClass} />
+                       </div>
+                    </div>
+                  </div>
+                </section>
+
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\dashboard\page.tsx
+==================================================
+import { MenuCard } from "@/components/dashboard/MenuCard";
+import { ClientsIcon, ProductsIcon, SalesIcon } from "@/components/icons";
+import { ClipboardList, Gift, Settings } from "lucide-react";
+import Link from "next/link";
+
+export default function DashboardPage() {
+  return (
+    <div className="premium-glass-box min-h-[70vh] flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-1000 ease-out p-8">
+      <header className="mb-16 text-center animate-in fade-in slide-in-from-top-6 duration-1000 delay-300 ease-out">
+        <h1 className="font-serif text-5xl uppercase tracking-[0.45em] text-[#5c4a33] sm:text-7xl">
+          Leblanc
+        </h1>
+        <div className="mt-4 flex items-center justify-center gap-6">
+          <div className="h-px w-10 bg-[#b08d57]/40" />
+          <p className="text-[9px] font-bold uppercase tracking-[0.6em] text-[#9c7b4a]">
+            Gestão & Excelência
+          </p>
+          <div className="h-px w-10 bg-[#b08d57]/40" />
+        </div>
+      </header>
+
+      <div className="grid w-full max-w-5xl gap-8 md:grid-cols-3 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-600 ease-out">
+        <MenuCard
+          href="/caixa"
+          icon={<SalesIcon />}
+          title="Vendas"
+          description="Gestão de pedidos e relatórios."
+        />
+        <MenuCard
+          href="/clientes"
+          icon={<ClientsIcon />}
+          title="Clientes"
+          description="Cadastro e histórico CRM."
+        />
+        <MenuCard
+          href="/produtos"
+          icon={<ProductsIcon />}
+          title="Produtos"
+          description="Catálogo e estoque."
+        />
+      </div>
+
+      <div className="mt-16 flex w-full max-w-4xl flex-col items-center animate-in fade-in duration-1000 delay-800">
+        <div className="mb-10 h-[1px] w-full bg-gradient-to-r from-transparent via-[#b08d57]/30 to-transparent" />
+
+        <div className="flex flex-wrap justify-center gap-3 md:flex-nowrap">
+          <Link
+            href="/listas"
+            className="group flex items-center gap-3 rounded-full border border-[#b08d57]/20 bg-white px-5 py-3 shadow-sm transition-all hover:border-[#b08d57]/50 hover:bg-[#f7f2ed] hover:shadow-lg active:scale-95"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8c6d45]/10 text-[#8c6d45] transition-all group-hover:bg-[#8c6d45] group-hover:text-white">
+              <Gift className="h-3.5 w-3.5" />
+            </div>
+            <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.32em] text-[#5c4a33]">
+              Listas de Eventos
+            </span>
+          </Link>
+
+          <Link
+            href="/condicionais"
+            className="group flex items-center gap-3 rounded-full border border-[#b08d57]/20 bg-white px-5 py-3 shadow-sm transition-all hover:border-[#b08d57]/50 hover:bg-[#f7f2ed] hover:shadow-lg active:scale-95"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8c6d45]/10 text-[#8c6d45] transition-all group-hover:bg-[#8c6d45] group-hover:text-white">
+              <ClipboardList className="h-3.5 w-3.5" />
+            </div>
+            <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.32em] text-[#5c4a33]">
+              Condicional
+            </span>
+          </Link>
+
+          <Link
+            href="/configuracoes"
+            className="group flex items-center gap-3 rounded-full border border-[#b08d57]/20 bg-white px-5 py-3 shadow-sm transition-all hover:border-[#b08d57]/50 hover:bg-[#f7f2ed] hover:shadow-lg active:scale-95"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8c6d45]/10 text-[#8c6d45] transition-all group-hover:bg-[#8c6d45] group-hover:text-white">
+              <Settings className="h-3.5 w-3.5" />
+            </div>
+            <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.32em] text-[#5c4a33]">
+              Configurações
+            </span>
+          </Link>
+        </div>
+      </div>
+
+      <footer className="mt-20 flex gap-8 text-[11px] font-bold uppercase tracking-[0.4em] text-[#8c6d45]/50 animate-in fade-in duration-1000 delay-1000">
+        <span>(c) 2026 Leblanc Presentes</span>
+        <span className="opacity-30">.</span>
+        <span>Sistema de Gestão Interna</span>
+      </footer>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\app\(painel)\layout.tsx
+==================================================
+"use client";
+
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+
+export default function PanelLayout({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  
+  // Determinamos se a página deve ser em tela cheia (sem bordas/padding de shell)
+  const isDashboardHome = pathname === "/dashboard";
+  const isFullscreen = [
+    "/produtos", 
+    "/clientes", 
+    "/condicionais",
+    "/caixa", 
+    "/configuracoes"
+  ].includes(pathname) || pathname.startsWith("/listas") || pathname.startsWith("/lista");
+
+  return (
+    <main className={
+      isDashboardHome 
+        ? "bg-dashboard-home flex min-h-screen items-center justify-center p-4 sm:p-8" 
+        : isFullscreen 
+          ? "h-screen w-full overflow-hidden" 
+          : "page-shell min-h-screen"
+    }>
+      {children}
+    </main>
+  );
+}
+

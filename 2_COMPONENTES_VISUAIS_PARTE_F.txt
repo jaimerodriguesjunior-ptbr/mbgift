@@ -1,0 +1,340 @@
+=== CONTEÚDO PARCIAL: 2_COMPONENTES_VISUAIS_PARTE_F.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\components\listas\ListaCard.tsx
+==================================================
+import { CalendarIcon } from "@/components/icons";
+import { Button } from "@/components/ui/Button";
+import { formatDate } from "@/lib/utils";
+import type { GiftList } from "@/lib/mock-data";
+
+type ListaCardProps = {
+  list: GiftList;
+};
+
+export function ListaCard({ list }: ListaCardProps) {
+  return (
+    <article className="overflow-hidden rounded-[2rem] border border-black/10 bg-white shadow-card">
+      <img src={list.photo} alt={list.brideName} className="h-56 w-full object-cover" />
+      <div className="space-y-5 p-6">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-black/45">{list.city}</p>
+          <h2 className="mt-2 font-serif text-3xl text-ink">{list.brideName}</h2>
+          <p className="mt-3 text-sm leading-7 text-black/62">{list.headline}</p>
+        </div>
+        <div className="flex items-center gap-3 rounded-[1.5rem] bg-cream px-4 py-3 text-sm text-ink">
+          <CalendarIcon className="h-5 w-5" />
+          <span>{formatDate(list.eventDate)}</span>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button href={`/listas/${list.id}`} className="flex-1">
+            Ver detalhes
+          </Button>
+          <Button href={`/lista-publica/${list.slug}`} variant="secondary" className="flex-1">
+            Abrir página pública
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\listas\ListaItem.tsx
+==================================================
+import { Button } from "@/components/ui/Button";
+import { formatCurrency } from "@/lib/utils";
+import type { GiftItemStatus, Product } from "@/lib/mock-data";
+import { Check } from "lucide-react";
+
+type ListaItemProps = {
+  product: Product;
+  status: GiftItemStatus;
+  note: string;
+  publicView?: boolean;
+  onChoose?: () => void;
+};
+
+const statusConfig: Record<GiftItemStatus, { label: string; tone: string }> = {
+  disponivel: { label: "Disponível", tone: "text-taupe bg-beige/40 border-taupe/10" },
+  reservado: { label: "Reservado", tone: "text-ink/40 bg-ink/5 border-ink/10" },
+  comprado: { label: "Presenteado", tone: "text-white bg-[#8c6d45] border-transparent" }
+};
+
+export function ListaItem({ product, status, note, publicView = false, onChoose }: ListaItemProps) {
+  const isAvailable = status === "disponivel";
+  const isBought = status === "comprado";
+  const isReserved = status === "reservado";
+  const isTaken = isBought || isReserved;
+
+  return (
+    <article className={`group relative bg-white/40 backdrop-blur-sm pb-8 hover-lift border-premium rounded-[2rem] overflow-hidden transition-all duration-700 ${
+      isTaken ? 'opacity-80 scale-[0.98]' : ''
+    }`}>
+      <div className="relative aspect-[1/1.15] overflow-hidden bg-beige/20">
+        <img 
+          src={product.images[product.mainImageIndex]} 
+          alt={product.name} 
+          className={`h-full w-full object-cover transition-all duration-1000 ease-out ${
+            isTaken ? 'grayscale brightness-90' : 'group-hover:scale-110'
+          }`} 
+        />
+        
+        {/* Reservation/Bought Overlay */}
+        {isTaken && (
+          <div className="absolute inset-0 bg-ink/10 backdrop-blur-[2px] flex items-center justify-center animate-in fade-in duration-500">
+            <div className="bg-white/90 backdrop-blur-md rounded-full px-5 py-2.5 flex items-center gap-2 shadow-2xl border border-white/20">
+              <Check className="h-4 w-4 text-[#8c6d45] stroke-[3px]" />
+              <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[#2a2421]">
+                {isBought ? "Presenteado" : "Reservado"}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Subtle overlay on hover */}
+        {!isBought && (
+          <div className="absolute inset-0 bg-taupe/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        )}
+        
+        {/* Category Tag */}
+        <div className="absolute top-5 left-5">
+          <span className="px-4 py-1.5 bg-white/80 backdrop-blur-md text-[9px] uppercase tracking-[0.3em] font-medium text-ink/60 rounded-full border border-white/40">
+            {product.category}
+          </span>
+        </div>
+
+        {/* Status Tag */}
+        <div className="absolute top-5 right-5">
+          <span className={`px-4 py-1.5 text-[9px] uppercase tracking-[0.3em] font-bold rounded-full border shadow-sm backdrop-blur-md transition-all ${statusConfig[status].tone}`}>
+            {statusConfig[status].label}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-8 px-8 space-y-5">
+        <div className="space-y-2">
+          <h3 className={`font-serif text-2xl text-ink transition-all duration-700 min-h-[4rem] line-clamp-2 leading-tight ${
+            isBought ? 'line-through opacity-40' : 'group-hover:text-taupe'
+          }`}>
+            {product.name}
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-taupe font-medium opacity-60">Curadoria Le Blanc</p>
+        </div>
+
+        <div className="pt-5 border-t border-taupe/[0.08]">
+          <p className="text-[13px] italic text-ink/50 line-clamp-2 min-h-[3rem] leading-relaxed font-serif">
+            "{note}"
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-3">
+          <div className="space-y-1">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-taupe opacity-50 font-bold">Valor único</p>
+            <p className={`text-xl font-light text-ink tracking-tight ${isBought ? 'opacity-30' : ''}`}>
+              {formatCurrency(product.price)}
+            </p>
+          </div>
+
+          {publicView && (
+            <Button
+              variant={isAvailable ? "primary" : "ghost"}
+              size="xs"
+              onClick={onChoose}
+              className={`rounded-full shadow-sm border border-white/20 transition-all ${
+                isAvailable ? "" : "opacity-30 pointer-events-none grayscale"
+              }`}
+            >
+              {isAvailable ? "Escolher" : isBought ? "Presenteado" : "Reservado"}
+            </Button>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\products\LabelCenter.tsx
+==================================================
+"use client";
+
+import { useState } from 'react';
+import { Product } from '@/types';
+import { Search, Plus, Minus, Tag, Printer, X, Trash2 } from 'lucide-react';
+import LabelSheet from './LabelSheet';
+
+interface LabelCenterProps {
+  products: Product[];
+  onClose: () => void;
+}
+
+export default function LabelCenter({ products, onClose }: LabelCenterProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [showSheet, setShowSheet] = useState(false);
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    p.ean.includes(searchTerm)
+  );
+
+  const handleUpdateQuantity = (productId: string, delta: number) => {
+    setSelectedQuantities(prev => {
+      const current = prev[productId] || 0;
+      const next = Math.max(0, current + delta);
+      if (next === 0) {
+        const { [productId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [productId]: next };
+    });
+  };
+
+  const selectedEntries = Object.entries(selectedQuantities)
+    .map(([id, qty]) => ({
+      product: products.find(p => p.id === id)!,
+      quantity: qty
+    }))
+    .filter(entry => entry.product);
+
+  const totalLabels = selectedEntries.reduce((acc, curr) => acc + curr.quantity, 0);
+
+  if (showSheet) {
+    return <LabelSheet items={selectedEntries} onClose={() => setShowSheet(false)} />;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#f8f5f2] flex flex-col md:flex-row animate-in fade-in duration-500">
+      {/* Sidebar: Product Selection */}
+      <div className="w-full md:w-[450px] bg-white border-r border-[#b08d57]/20 flex flex-col shadow-2xl z-10">
+        <div className="p-6 border-b border-[#b08d57]/10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-2xl text-[#2a2421]">Gerador de Etiquetas</h2>
+            <button onClick={onClose} className="p-2 hover:bg-[#faf8f5] rounded-full transition-colors">
+              <X className="h-5 w-5 text-[#5c4a33]" />
+            </button>
+          </div>
+          
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8c6d45] group-focus-within:text-[#b08d57] transition-colors" />
+            <input 
+              type="text"
+              placeholder="Buscar produto ou EAN..."
+              className="w-full rounded-2xl border-2 border-[#b08d57]/10 bg-[#faf8f5] py-3.5 pl-12 pr-4 text-sm focus:border-[#b08d57]/40 focus:bg-white outline-none transition-all placeholder:text-[#b08d57]/40"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4 space-y-2 custom-scrollbar">
+          {filteredProducts.map(product => {
+            const qty = selectedQuantities[product.id] || 0;
+            return (
+              <div 
+                key={product.id}
+                className={`p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${
+                  qty > 0 ? "border-[#8c6d45] bg-[#faf8f5] shadow-sm" : "border-transparent hover:border-[#b08d57]/20"
+                }`}
+              >
+                <div className="flex-1 min-w-0 pr-4">
+                  <p className="text-sm font-bold text-[#2a2421] truncate">{product.name}</p>
+                  <p className="text-[10px] text-[#8c6d45] font-bold uppercase tracking-widest mt-0.5">
+                    Ref: {product.ean || 'Interna'}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  {qty > 0 && (
+                    <>
+                      <button 
+                        onClick={() => handleUpdateQuantity(product.id, -1)}
+                        className="h-8 w-8 rounded-full border border-[#b08d57]/30 flex items-center justify-center text-[#5c4a33] hover:bg-white transition-colors shadow-sm"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </button>
+                      <span className="text-sm font-black text-[#8c6d45] w-6 text-center">{qty}</span>
+                    </>
+                  )}
+                  <button 
+                    onClick={() => handleUpdateQuantity(product.id, 1)}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center transition-all shadow-sm ${
+                      qty > 0 ? "bg-[#8c6d45] text-white hover:bg-[#725a38]" : "bg-white border border-[#b08d57]/30 text-[#5c4a33] hover:border-[#8c6d45]"
+                    }`}
+                  >
+                    <Plus className="h-4 w-4 text-inherit" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Area: Selection Summary & Actions */}
+      <div className="flex-1 p-8 md:p-12 overflow-auto flex flex-col">
+        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+          {selectedEntries.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-40">
+              <div className="h-20 w-20 rounded-full bg-[#b08d57]/10 flex items-center justify-center mb-6">
+                <Tag className="h-10 w-10 text-[#8c6d45]" />
+              </div>
+              <h3 className="font-serif text-2xl text-[#2a2421] mb-2">Nenhuma etiqueta pendente</h3>
+              <p className="text-sm text-[#5c4a33]">Selecione os produtos ao lado para começar a montar sua folha de impressão.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#b08d57]/20">
+                <h3 className="font-serif text-3xl text-[#2a2421]">Carrinho de Etiquetas</h3>
+                <button 
+                  onClick={() => setSelectedQuantities({})}
+                  className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-red-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Limpar Tudo
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1 content-start mb-8">
+                {selectedEntries.map(({ product, quantity }) => (
+                  <div key={product.id} className="bg-white p-6 rounded-3xl border border-[#b08d57]/10 shadow-sm flex items-center gap-6 group hover:shadow-md transition-all">
+                    <img src={product.images[0]} className="h-16 w-16 object-cover rounded-xl border border-[#b08d57]/10 group-hover:scale-105 transition-transform" />
+                    <div className="flex-1">
+                      <p className="font-serif text-lg text-[#2a2421] leading-tight truncate">{product.name}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                         <span className="text-[10px] font-bold uppercase text-[#8c6d45] tracking-[0.2em]">{quantity} unidades</span>
+                         <span className="h-1 w-1 rounded-full bg-[#b08d57]/40" />
+                         <span className="text-[10px] font-bold text-[#b08d57]/60 truncate font-mono">ID: {product.id}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Final Action Bar */}
+              <div className="bg-[#8c6d45] rounded-[32px] p-8 flex flex-col sm:flex-row items-center justify-between shadow-2xl shadow-[#8c6d45]/30 animate-in slide-in-from-bottom-8 duration-700">
+                <div>
+                  <p className="text-white/70 text-[10px] uppercase font-bold tracking-[0.3em]">Resumo da Folha</p>
+                  <h4 className="text-white font-serif text-4xl mt-1">{totalLabels} <span className="text-xl opacity-60">etiquetas</span></h4>
+                </div>
+                <button 
+                  onClick={() => setShowSheet(true)}
+                  className="mt-6 sm:mt-0 w-full sm:w-auto px-12 py-5 bg-white rounded-2xl text-[#8c6d45] font-black uppercase tracking-[0.2em] text-sm hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center justify-center gap-4"
+                >
+                  <Printer className="h-5 w-5" />
+                  Gerar Impressão
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+

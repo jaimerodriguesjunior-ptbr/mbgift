@@ -1,0 +1,681 @@
+=== CONTEÚDO PARCIAL: 3_REGRAS_BANCO_DADOS_PARTE_A.txt ===
+=== CONTÉM 2 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\lib\mock-data.ts
+==================================================
+import { 
+  GiftItemStatus, 
+  Product, 
+  GiftListItem, 
+  GiftList, 
+  Client, 
+  CashMove, 
+  Tenant 
+} from "@/types";
+
+export const tenants: Record<string, Tenant> = {
+  "le-blanc": {
+    id: "le-blanc",
+    name: "Le Blanc Presentes",
+    shortName: "Le Blanc",
+    tagline: "A curadoria definitiva em Le Creuset e decoração de alto padrão.",
+    logoLabel: "Le Blanc",
+    primaryColor: "#eadfd7",
+    secondaryColor: "#a69b8f",
+    fontSerif: "var(--font-serif)",
+    fontSans: "var(--font-sans)"
+  }
+};
+
+export const tenant = tenants["le-blanc"];
+
+export const navigation = [
+  { href: "/dashboard", label: "Início" },
+  { href: "/listas", label: "Listas" },
+  { href: "/produtos", label: "Produtos" },
+  { href: "/clientes", label: "Clientes" },
+  { href: "/caixa", label: "Caixa" }
+];
+
+export const products: Product[] = [
+  {
+    id: "panela-ferro",
+    name: "Panela Redonda Evolution 24cm - Flame",
+    price: 1899.00,
+    stock: 2,
+    category: "Cozinha",
+    images: ["https://images.unsplash.com/photo-1590664095641-7fa05f689813?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567890"
+  },
+  {
+    id: "travessa-oval",
+    name: "Travessa Oval Cerâmica 36cm - Marseille",
+    price: 459.90,
+    stock: 7,
+    category: "Mesa posta",
+    images: ["https://images.unsplash.com/photo-1594385208974-2e75f9d8ad48?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567891"
+  },
+  {
+    id: "faqueiro-champagne",
+    name: "Faqueiro Oxford Champagne 30pç",
+    price: 1250.00,
+    stock: 4,
+    category: "Mesa posta",
+    images: ["https://images.unsplash.com/photo-1589923188900-85dae523342b?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567892"
+  },
+  {
+    id: "chaleira-kone",
+    name: "Chaleira Kone 1.6L - Bamboo",
+    price: 649.00,
+    stock: 3,
+    category: "Chá & Café",
+    images: ["https://images.unsplash.com/photo-1544787210-28271d7b60ef?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567893"
+  },
+  {
+    id: "grelha-ferro",
+    name: "Grelha Retangular Ferro Fundido - Dune",
+    price: 1149.00,
+    stock: 5,
+    category: "Cozinha",
+    images: ["https://images.unsplash.com/photo-1584281729155-3c9933058042?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567894"
+  },
+  {
+    id: "moedor-set",
+    name: "Set Moedores de Sal e Pimenta - Merengue",
+    price: 429.00,
+    stock: 12,
+    category: "Acessórios",
+    images: ["https://images.unsplash.com/photo-1588258334259-22a964098495?q=80&w=800&auto=format&fit=crop"],
+    mainImageIndex: 0,
+    ean: "7891234567895"
+  }
+];
+
+export const giftLists: GiftList[] = [
+  {
+    id: "camila-ana",
+    slug: "camila-e-ana",
+    brideName: "Camila & Ana",
+    eventDate: "2026-08-15",
+    city: "Campinas, SP",
+    headline: "Uma celebração da arte de receber e do bem-viver.",
+    photo: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+    items: [
+      { id: "item-1", productId: "panela-ferro", note: "Para os almoços de domingo", status: "disponivel" },
+      { id: "item-2", productId: "travessa-oval", note: "Mesa posta de recepção", status: "reservado" },
+      { id: "item-3", productId: "faqueiro-champagne", note: "Jantares especiais", status: "comprado" },
+      { id: "item-4", productId: "chaleira-kone", note: "Momentos de pausa e chá", status: "disponivel" }
+    ]
+  },
+  {
+    id: "marina-luiza",
+    slug: "marina-e-luiza",
+    brideName: "Marina & Luiza",
+    eventDate: "2026-10-02",
+    city: "Ribeirão Preto, SP",
+    headline: "Cores vivas e uma cozinha cheia de histórias para contar.",
+    photo: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=1200&auto=format&fit=crop",
+    items: [
+      { id: "item-5", productId: "chaleira-kone", note: "Essencial para as manhãs", status: "disponivel" },
+      { id: "item-6", productId: "moedor-set", note: "Toque final da mesa", status: "disponivel" },
+      { id: "item-7", productId: "grelha-ferro", note: "Cozinhando com amor", status: "reservado" }
+    ]
+  },
+  {
+    id: "livia-sampaio-id",
+    slug: "livia",
+    brideName: "Lívia Sampaio",
+    eventDate: "2026-12-20",
+    city: "Campinas, SP",
+    headline: "Bem-vindos à nossa nova jornada!",
+    photo: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1200&auto=format&fit=crop",
+    items: [
+      { id: "item-l1", productId: "panela-ferro", note: "Amamos cozinhar juntos!", status: "disponivel" },
+      { id: "item-l2", productId: "travessa-oval", note: "Para nossas noites de lasanha", status: "comprado", guestName: "Família Sampaio", guestMessage: "Lívia, que sua nova casa seja repleta de sabores e alegrias! Com amor, Tia Célia." },
+      { id: "item-l3", productId: "moedor-set", note: "O toque de mestre", status: "disponivel" },
+      { id: "item-l4", productId: "chaleira-kone", note: "Para nosso chá da tarde", status: "reservado", guestName: "Bruna Teles", guestMessage: "Amiga, mal posso esperar pelos nossos chás da tarde na casa nova! Aproveite muito." }
+    ]
+  }
+];
+
+export const clients: Client[] = [
+  { id: "cliente-1", name: "Lívia Sampaio", phone: "(19) 99871-4450", instagram: "liviaemcasa", cpf: "123.456.789-00", address: "Rua Cascalho, 123 - Campinas, SP", isTrusted: true },
+  { id: "cliente-2", name: "Bruna Teles", phone: "(16) 99711-1093", instagram: "bruteles_", cpf: "987.654.321-11", address: "Av. Paulista, 1000 - São Paulo, SP", isTrusted: true },
+  { id: "cliente-3", name: "Marina Fava", phone: "(11) 99555-7788", instagram: "marifava", cpf: "456.789.123-22", address: "Rua Oscar Freire, 500 - São Paulo, SP", isTrusted: false },
+  { id: "cliente-4", name: "Talita Moura", phone: "(11) 98989-2121", instagram: "talitamdecor", cpf: "321.654.987-33", address: "Rua Amauri, 200 - São Paulo, SP", isTrusted: true }
+];
+
+export const cashMoves: CashMove[] = [
+  { id: "mov-1", type: "entrada", title: "Venda lista Camila & Ana", amount: 1250, date: "2026-03-24" },
+  { id: "mov-2", type: "entrada", title: "Produto avulso - Moedor Set", amount: 429, date: "2026-03-24" },
+  { id: "mov-3", type: "saida", title: "Embalagens especiais Luxo", amount: 180, date: "2026-03-23" },
+  { id: "mov-4", type: "saida", title: "Serviço de entrega Premium", amount: 65, date: "2026-03-23" }
+];
+
+export function getProductById(id: string) {
+  return products.find((product) => product.id === id);
+}
+
+export const getStoreProducts = () => products;
+
+export function getGiftListById(id: string) {
+  return giftLists.find((list) => list.id === id);
+}
+
+export function getGiftListBySlug(slug: string) {
+  return giftLists.find((list) => list.slug === slug);
+}
+
+export function getTenantBySlug(slug: string): Tenant | undefined {
+  return tenants["le-blanc"];
+}
+
+
+==================================================
+ARQUIVO: .\src\lib\mock-store.ts
+==================================================
+"use client";
+
+import { useSyncExternalStore } from "react";
+import { clients as initialClients, products as initialProducts } from "@/lib/mock-data";
+import { 
+  Client, 
+  Product, 
+  StorePaymentMethod, 
+  StorePaymentEntry, 
+  SaleRecord, 
+  ConditionalStatus, 
+  ConditionalItem, 
+  ConditionalRecord, 
+  CheckoutDraft, 
+  MockStoreState 
+} from "@/types";
+
+type ConditionalInputItem = {
+  productId: string;
+  qtySent: number;
+};
+
+type PrepareConditionalCheckoutInput = {
+  conditionalId: string;
+  soldQuantities: Record<string, number>;
+};
+
+type RecordSaleInput = {
+  total: number;
+  payments: StorePaymentEntry[];
+  clientId?: string;
+  cpf?: string;
+  items: Array<{
+    productId: string;
+    qty: number;
+  }>;
+  originType: "direct" | "conditional";
+  originId?: string;
+};
+
+const STORAGE_KEY = "leblanc-mock-store-v1";
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
+
+const createInitialState = (): MockStoreState => ({
+  products: clone(initialProducts),
+  clients: clone(initialClients),
+  sales: [],
+  conditionals: [],
+  checkoutDraft: null
+});
+
+let storeState: MockStoreState = createInitialState();
+let isHydrated = false;
+
+const listeners = new Set<() => void>();
+
+function emitChange() {
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(storeState));
+  }
+
+  listeners.forEach((listener) => listener());
+}
+
+function hydrateStore() {
+  if (isHydrated || typeof window === "undefined") {
+    return;
+  }
+
+  isHydrated = true;
+
+  const raw = window.localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<MockStoreState>;
+    storeState = {
+      ...createInitialState(),
+      ...parsed
+    };
+  } catch {
+    storeState = createInitialState();
+  }
+}
+
+function setStoreState(updater: (current: MockStoreState) => MockStoreState) {
+  hydrateStore();
+  storeState = updater(storeState);
+  emitChange();
+}
+
+function getState() {
+  hydrateStore();
+  return storeState;
+}
+
+function getServerSnapshot() {
+  return createInitialState();
+}
+
+function formatTime() {
+  return new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function findClientName(clients: Client[], clientId?: string) {
+  if (!clientId) {
+    return undefined;
+  }
+
+  return clients.find((client) => client.id === clientId)?.name;
+}
+
+function ensureProductExists(products: Product[], productId: string) {
+  const product = products.find((entry) => entry.id === productId);
+  if (!product) {
+    throw new Error("Produto não encontrado.");
+  }
+
+  return product;
+}
+
+function getOpenConditional(state: MockStoreState, conditionalId: string) {
+  return state.conditionals.find((entry) => entry.id === conditionalId && entry.status === "open");
+}
+
+export function useMockStore() {
+  return useSyncExternalStore(
+    (listener) => {
+      hydrateStore();
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    getState,
+    getServerSnapshot
+  );
+}
+
+export function getReservedQuantityForProduct(productId: string, state = getState()) {
+  return state.conditionals
+    .filter((conditional) => conditional.status === "open")
+    .reduce((total, conditional) => {
+      const conditionalQty = conditional.items
+        .filter((item) => item.productId === productId)
+        .reduce((sum, item) => sum + item.qtySent, 0);
+
+      return total + conditionalQty;
+    }, 0);
+}
+
+export function getAvailableStock(productId: string, state = getState()) {
+  const product = state.products.find((entry) => entry.id === productId);
+  if (!product) {
+    return 0;
+  }
+
+  return Math.max(0, product.stock - getReservedQuantityForProduct(productId, state));
+}
+
+export function getOpenConditionalByClientId(clientId: string, state = getState()) {
+  return state.conditionals.find((entry) => entry.clientId === clientId && entry.status === "open");
+}
+
+export function addClient(client: Client) {
+  setStoreState((current) => ({
+    ...current,
+    clients: [client, ...current.clients]
+  }));
+}
+
+export function updateClient(updatedClient: Client) {
+  setStoreState((current) => ({
+    ...current,
+    clients: current.clients.map((client) => (client.id === updatedClient.id ? updatedClient : client))
+  }));
+}
+
+export function addProduct(product: Product) {
+  setStoreState((current) => ({
+    ...current,
+    products: [product, ...current.products]
+  }));
+}
+
+export function updateProduct(updatedProduct: Product) {
+  setStoreState((current) => ({
+    ...current,
+    products: current.products.map((product) => (product.id === updatedProduct.id ? updatedProduct : product))
+  }));
+}
+
+export function createConditional(input: {
+  clientId: string;
+  dueDate: string;
+  notes?: string;
+  items: ConditionalInputItem[];
+}) {
+  const state = getState();
+  const client = state.clients.find((entry) => entry.id === input.clientId);
+
+  if (!client) {
+    throw new Error("Cliente não encontrado.");
+  }
+
+  if (!client.isTrusted) {
+    throw new Error("Este cliente está bloqueado para condicional.");
+  }
+
+  if (getOpenConditionalByClientId(input.clientId, state)) {
+    throw new Error("Este cliente já possui um condicional em aberto.");
+  }
+
+  if (!input.dueDate) {
+    throw new Error("Defina a data de devolução.");
+  }
+
+  if (input.items.length === 0) {
+    throw new Error("Adicione ao menos um produto ao condicional.");
+  }
+
+  const items = input.items.map((item) => {
+    if (item.qtySent <= 0) {
+      throw new Error("Quantidade inválida no condicional.");
+    }
+
+    const product = ensureProductExists(state.products, item.productId);
+    const availableStock = getAvailableStock(item.productId, state);
+
+    if (item.qtySent > availableStock) {
+      throw new Error(`Estoque indisponível para ${product.name}.`);
+    }
+
+    return {
+      productId: item.productId,
+      qtySent: item.qtySent,
+      qtySold: 0,
+      qtyReturned: 0,
+      unitPrice: product.price
+    } satisfies ConditionalItem;
+  });
+
+  const createdRecord: ConditionalRecord = {
+    id: `cond-${Date.now()}`,
+    clientId: input.clientId,
+    status: "open",
+    openedAt: new Date().toISOString(),
+    dueDate: input.dueDate,
+    notes: input.notes?.trim() || undefined,
+    items
+  };
+
+  setStoreState((current) => ({
+    ...current,
+    conditionals: [createdRecord, ...current.conditionals]
+  }));
+
+  return createdRecord;
+}
+
+export function markConditionalReceiptPrinted(conditionalId: string) {
+  setStoreState((current) => ({
+    ...current,
+    conditionals: current.conditionals.map((conditional) =>
+      conditional.id === conditionalId
+        ? { ...conditional, receiptPrintedAt: new Date().toISOString() }
+        : conditional
+    )
+  }));
+}
+
+export function closeConditionalAsReturned(conditionalId: string, soldQuantities?: Record<string, number>) {
+  const state = getState();
+  const conditional = getOpenConditional(state, conditionalId);
+
+  if (!conditional) {
+    throw new Error("Condicional não encontrado ou já finalizado.");
+  }
+
+  const anySold = conditional.items.some((item) => (soldQuantities?.[item.productId] ?? 0) > 0);
+
+  if (anySold) {
+    throw new Error("Use a preparação para caixa quando houver itens vendidos.");
+  }
+
+  setStoreState((current) => ({
+    ...current,
+    checkoutDraft:
+      current.checkoutDraft?.originId === conditionalId ? null : current.checkoutDraft,
+    conditionals: current.conditionals.map((entry) =>
+      entry.id === conditionalId
+        ? {
+            ...entry,
+            status: "returned_full",
+            items: entry.items.map((item) => ({
+              ...item,
+              qtySold: 0,
+              qtyReturned: item.qtySent
+            }))
+          }
+        : entry
+    )
+  }));
+}
+
+export function prepareConditionalCheckout(input: PrepareConditionalCheckoutInput) {
+  const state = getState();
+  const conditional = getOpenConditional(state, input.conditionalId);
+
+  if (!conditional) {
+    throw new Error("Condicional não encontrado ou já finalizado.");
+  }
+
+  const checkoutItems = conditional.items
+    .map((item) => {
+      const qtySold = Math.max(0, Math.min(item.qtySent, input.soldQuantities[item.productId] ?? 0));
+      return qtySold > 0
+        ? {
+            productId: item.productId,
+            qty: qtySold
+          }
+        : null;
+    })
+    .filter(Boolean) as CheckoutDraft["items"];
+
+  if (checkoutItems.length === 0) {
+    closeConditionalAsReturned(input.conditionalId);
+    return null;
+  }
+
+  const draft: CheckoutDraft = {
+    originType: "conditional",
+    originId: conditional.id,
+    clientId: conditional.clientId,
+    createdAt: new Date().toISOString(),
+    items: checkoutItems
+  };
+
+  setStoreState((current) => ({
+    ...current,
+    checkoutDraft: draft
+  }));
+
+  return draft;
+}
+
+export function clearCheckoutDraft() {
+  setStoreState((current) => ({
+    ...current,
+    checkoutDraft: null
+  }));
+}
+
+export function recordSale(input: RecordSaleInput) {
+  const state = getState();
+  const aggregatedItems = input.items.reduce<Array<{ productId: string; qty: number }>>((acc, item) => {
+    const existing = acc.find((entry) => entry.productId === item.productId);
+    if (existing) {
+      existing.qty += item.qty;
+      return acc;
+    }
+
+    acc.push({ ...item });
+    return acc;
+  }, []);
+
+  aggregatedItems.forEach((item) => {
+    const product = ensureProductExists(state.products, item.productId);
+    const reservedQty = input.originType === "conditional" && input.originId
+      ? Math.max(0, getReservedQuantityForProduct(item.productId, state) - item.qty)
+      : getReservedQuantityForProduct(item.productId, state);
+
+    const availableForSale = Math.max(0, product.stock - reservedQty);
+
+    if (item.qty > availableForSale) {
+      throw new Error(`Estoque insuficiente para ${product.name}.`);
+    }
+  });
+
+  const saleId = `venda-${Date.now()}`;
+  const record: SaleRecord = {
+    id: saleId,
+    total: input.total,
+    payments: input.payments,
+    time: formatTime(),
+    clientId: input.clientId,
+    clientName: findClientName(state.clients, input.clientId),
+    cpf: input.cpf || undefined,
+    originType: input.originType,
+    originId: input.originId
+  };
+
+  setStoreState((current) => {
+    let nextProducts = current.products.map((product) => {
+      const soldItem = aggregatedItems.find((item) => item.productId === product.id);
+      if (!soldItem) {
+        return product;
+      }
+
+      return {
+        ...product,
+        stock: Math.max(0, product.stock - soldItem.qty)
+      };
+    });
+
+    let nextConditionals = current.conditionals;
+    let nextCheckoutDraft = current.checkoutDraft;
+
+    if (input.originType === "conditional" && input.originId) {
+      nextConditionals = current.conditionals.map((conditional) => {
+        if (conditional.id !== input.originId) {
+          return conditional;
+        }
+
+        const finalizedItems = conditional.items.map((item) => {
+          const soldQty = aggregatedItems.find((entry) => entry.productId === item.productId)?.qty ?? 0;
+          return {
+            ...item,
+            qtySold: soldQty,
+            qtyReturned: item.qtySent - soldQty
+          };
+        });
+
+        const soldTotal = finalizedItems.reduce((sum, item) => sum + item.qtySold, 0);
+        const sentTotal = finalizedItems.reduce((sum, item) => sum + item.qtySent, 0);
+
+        let status: ConditionalStatus = "returned_full";
+        if (soldTotal === sentTotal) {
+          status = "converted_full";
+        } else if (soldTotal > 0) {
+          status = "converted_partial";
+        }
+
+        return {
+          ...conditional,
+          saleId,
+          status,
+          items: finalizedItems
+        };
+      });
+
+      if (nextCheckoutDraft?.originId === input.originId) {
+        nextCheckoutDraft = null;
+      }
+    }
+
+    return {
+      ...current,
+      products: nextProducts,
+      sales: [record, ...current.sales],
+      conditionals: nextConditionals,
+      checkoutDraft: nextCheckoutDraft
+    };
+  });
+
+  return record;
+}
+
+export function getConditionalDerivedStatus(conditional: ConditionalRecord) {
+  if (conditional.status !== "open") {
+    return conditional.status;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(`${conditional.dueDate}T00:00:00`);
+  if (dueDate.getTime() < today.getTime()) {
+    return "late";
+  }
+
+  if (dueDate.getTime() === today.getTime()) {
+    return "due_today";
+  }
+
+  return "open";
+}
+
+export function getConditionalValue(conditional: ConditionalRecord) {
+  return conditional.items.reduce((sum, item) => sum + item.unitPrice * item.qtySent, 0);
+}
+
+export function getConditionalConvertedValue(conditional: ConditionalRecord) {
+  return conditional.items.reduce((sum, item) => sum + item.unitPrice * item.qtySold, 0);
+}
+
+export function getConditionalReturnedValue(conditional: ConditionalRecord) {
+  return conditional.items.reduce((sum, item) => sum + item.unitPrice * item.qtyReturned, 0);
+}
+

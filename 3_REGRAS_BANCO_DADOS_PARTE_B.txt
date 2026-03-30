@@ -1,0 +1,44 @@
+=== CONTEÚDO PARCIAL: 3_REGRAS_BANCO_DADOS_PARTE_B.txt ===
+=== CONTÉM 1 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\lib\utils.ts
+==================================================
+export function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(value);
+}
+
+export function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(`${value}T12:00:00`));
+}
+
+export function createMockImage(label: string, accent = "#d9c9b7", text = "#201a17") {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fbf8f4" />
+          <stop offset="100%" stop-color="${accent}" />
+        </linearGradient>
+      </defs>
+      <rect width="800" height="600" rx="40" fill="url(#bg)" />
+      <rect x="48" y="48" width="704" height="504" rx="28" fill="none" stroke="rgba(32,26,23,0.12)" />
+      <circle cx="400" cy="230" r="92" fill="rgba(255,255,255,0.55)" />
+      <path d="M305 390c40-42 150-42 190 0" fill="none" stroke="rgba(32,26,23,0.22)" stroke-width="20" stroke-linecap="round" />
+      <text x="50%" y="500" text-anchor="middle" fill="${text}" font-size="42" font-family="Georgia, serif" letter-spacing="4">
+        ${label}
+      </text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+

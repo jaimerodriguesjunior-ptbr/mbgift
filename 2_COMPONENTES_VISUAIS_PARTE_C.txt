@@ -1,0 +1,568 @@
+=== CONTEÚDO PARCIAL: 2_COMPONENTES_VISUAIS_PARTE_C.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\components\conditionals\ConditionalReviewModal.tsx
+==================================================
+"use client";
+
+import { useState } from "react";
+import { X } from "lucide-react";
+import { Product, ConditionalRecord } from "@/types";
+import { formatCurrency } from "@/lib/utils";
+
+export function ConditionalReviewModal({
+  conditional,
+  products,
+  onClose,
+  onConfirm
+}: {
+  conditional: ConditionalRecord;
+  products: Product[];
+  onClose: () => void;
+  onConfirm: (soldQuantities: Record<string, number>) => void;
+}) {
+  const [soldQuantities, setSoldQuantities] = useState<Record<string, number>>(
+    Object.fromEntries(conditional.items.map((item) => [item.productId, 0]))
+  );
+
+  const totalSoldValue = conditional.items.reduce((sum, item) => {
+    const soldQty = soldQuantities[item.productId] ?? 0;
+    return sum + soldQty * item.unitPrice;
+  }, 0);
+
+  const setQty = (productId: string, nextQty: number, maxQty: number) => {
+    setSoldQuantities((current) => ({
+      ...current,
+      [productId]: Math.max(0, Math.min(maxQty, nextQty))
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-[#2a2421]/45 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[calc(100vh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[2.5rem] border-2 border-[#b08d57]/20 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+        <div className="overflow-y-auto p-8 md:p-10">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">Fechamento do condicional</p>
+            <h2 className="mt-2 font-serif text-4xl text-[#2a2421]">O que o cliente vai ficar?</h2>
+          </div>
+          <button onClick={onClose} className="rounded-full border border-[#b08d57]/20 p-3 text-[#8c6d45] hover:bg-[#f7f2ed] transition-all">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="mt-8 space-y-4">
+          {conditional.items.map((item) => {
+            const product = products.find((entry) => entry.id === item.productId);
+            const soldQty = soldQuantities[item.productId] ?? 0;
+            const returnedQty = item.qtySent - soldQty;
+            return (
+              <div key={item.productId} className="rounded-[2rem] border border-[#b08d57]/10 bg-[#fdfbf7] p-5">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="min-w-0">
+                    <p className="font-serif text-2xl text-[#2a2421] truncate">{product?.name ?? item.productId}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#8c6d45]">
+                      Retirado {item.qtySent} · {formatCurrency(item.unitPrice)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setQty(item.productId, soldQty - 1, item.qtySent)}
+                      className="h-10 w-10 rounded-full border border-[#b08d57]/20 text-[#8c6d45] hover:bg-white transition-all"
+                    >
+                      -
+                    </button>
+                    <div className="rounded-2xl bg-white px-5 py-3 text-center shadow-sm border border-[#b08d57]/10">
+                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#8c6d45]">Compra</p>
+                      <p className="mt-1 text-2xl font-black text-[#2a2421]">{soldQty}</p>
+                    </div>
+                    <button
+                      onClick={() => setQty(item.productId, soldQty + 1, item.qtySent)}
+                      className="h-10 w-10 rounded-full bg-[#8c6d45] text-white hover:bg-[#725a38] transition-all"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3 text-[10px] font-black uppercase tracking-[0.22em]">
+                  <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700 border border-amber-200">
+                    Devolução automática {returnedQty}
+                  </span>
+                  <span className="rounded-full bg-[#f7f2ed] px-3 py-1.5 text-[#8c6d45]">
+                    Venda gerada {formatCurrency(soldQty * item.unitPrice)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-8 flex flex-col gap-4 rounded-[2rem] border border-[#b08d57]/10 bg-[#fefcfb] p-5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#8c6d45]">Total que vai para o caixa</p>
+            <p className="mt-2 font-serif text-3xl text-[#2a2421]">{formatCurrency(totalSoldValue)}</p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="rounded-2xl border-2 border-[#b08d57]/20 px-6 py-3 text-xs font-black uppercase tracking-widest text-[#5c4a33] hover:bg-white transition-all"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={() => onConfirm(soldQuantities)}
+              className="rounded-2xl bg-[#8c6d45] px-6 py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 hover:bg-[#725a38] transition-all"
+            >
+              {totalSoldValue > 0 ? "Enviar ao caixa" : "Confirmar devolução"}
+            </button>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\customers\CustomerDetail.tsx
+==================================================
+"use client";
+
+import { MessageCircle, Camera, Phone, User, Check, Star, MapPin, CreditCard, Gift, ClipboardList, ArrowUpRight } from "lucide-react";
+import { useState, ReactElement, useEffect } from "react";
+import Link from "next/link";
+import { Client } from "@/types";
+import { getConditionalDerivedStatus, getConditionalValue, useMockStore } from "@/lib/mock-store";
+
+interface CustomerDetailProps {
+  client: Client | null;
+  onUpdate: (client: Client) => void;
+}
+
+export function CustomerDetail({ client, onUpdate }: CustomerDetailProps) {
+  const [formData, setFormData] = useState<Client | null>(client);
+  const { conditionals } = useMockStore();
+
+  useEffect(() => {
+    setFormData(client);
+  }, [client]);
+
+  if (!client || !formData) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-12 text-center opacity-30 bg-[#fefcfb]">
+        <User className="h-20 w-20 mb-4 stroke-1 text-[#8c6d45]" />
+        <h3 className="font-serif text-2xl text-[#2a2421]">Nenhum cliente selecionado</h3>
+        <p className="max-w-xs mt-3 text-sm font-medium uppercase tracking-[0.2em] text-[#8c6d45]">
+          Selecione um cliente na lista ao lado para ver e editar seus detalhes.
+        </p>
+      </div>
+    );
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    // If the instagram handle changes, we clear the saved photo 
+    // to allow the dynamic unavatar to show the new profile 
+    const updated = { 
+      ...formData, 
+      [name]: value,
+      ...(name === "instagram" ? { photo: undefined } : {})
+    } as Client;
+    
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const handleSyncPhoto = () => {
+    if (!formData) return;
+    const instagramPhotoUrl = `https://unavatar.io/instagram/${formData.instagram}`;
+    const updated = { ...formData, photo: instagramPhotoUrl };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const handleToggleTrust = () => {
+    if (!formData) return;
+    const updated = { ...formData, isTrusted: !formData.isTrusted };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const clientPhotoUrl = formData.photo || `https://unavatar.io/instagram/${formData.instagram}`;
+  const formattedPhoneForWhatsapp = formData.phone.replace(/\D/g, "");
+  const openConditional = conditionals.find((entry) => entry.clientId === formData.id && entry.status === "open");
+  const openConditionalStatus = openConditional ? getConditionalDerivedStatus(openConditional) : null;
+  const openConditionalValue = openConditional ? getConditionalValue(openConditional) : 0;
+
+  return (
+    <div className="flex h-full flex-col bg-[#fefcfb] custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-700 relative">
+      
+      {/* Profile Header - More Compact & Higher Up */}
+      <div className="flex flex-col md:flex-row items-center md:items-start md:justify-between px-8 pt-8 md:px-12 md:pt-10 border-b border-[#b08d57]/10 pb-8 bg-white/40">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="relative group overflow-visible select-none">
+            <div className="relative h-20 w-20 md:h-24 md:w-24 overflow-hidden rounded-[2.2rem] border-4 border-white shadow-2xl rotate-2 transition-transform hover:rotate-0 duration-500">
+              <img
+                src={clientPhotoUrl}
+                className="h-full w-full object-cover scale-110"
+                alt={formData.name}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=f7f2ed&color=8c6d45&size=512`;
+                }}
+              />
+            </div>
+            {/* Sync Overlay Button */}
+            <button 
+              onClick={handleSyncPhoto}
+              title="Sincronizar Foto do Instagram"
+              className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full bg-white border-2 border-[#b08d57]/20 flex items-center justify-center text-[#8c6d45] hover:bg-[#8c6d45] hover:text-white transition-all shadow-lg z-10 group/sync"
+            >
+              <Check className={`h-4 w-4 transition-transform ${formData.photo ? 'scale-110' : 'scale-0'}`} />
+              {!formData.photo && <Camera className="absolute h-4 w-4 transition-transform group-hover/sync:scale-110" />}
+            </button>
+          </div>
+
+          <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
+            <h2 className="font-serif text-3xl md:text-5xl text-[#2a2421] tracking-tight mb-2">{formData.name}</h2>
+            
+            {/* Social Buttons - Compact beneath the name */}
+            <div className="flex items-center gap-3">
+              <a 
+                href={`https://wa.me/${formattedPhoneForWhatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#ecfdf5] border border-[#10b981]/20 text-[#065f46] hover:bg-[#10b981] hover:text-white transition-all text-[11px] font-black uppercase tracking-wider shadow-sm group"
+              >
+                <MessageCircle className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                WhatsApp
+              </a>
+              <a 
+                href={`https://instagram.com/${formData.instagram}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fff1f2] border border-[#f43f5e]/20 text-[#9f1239] hover:bg-[#f43f5e] hover:text-white transition-all text-[11px] font-black uppercase tracking-wider shadow-sm group"
+              >
+                <Camera className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                Instagram
+              </a>
+              <Link 
+                href={`/listas/novo?clienteId=${formData.id}`}
+                className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fdfaf7] border border-[#b08d57]/20 text-[#8c6d45] hover:bg-[#8c6d45] hover:text-white transition-all text-[11px] font-black uppercase tracking-wider shadow-sm group"
+              >
+                <Gift className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                Criar lista de presentes
+              </Link>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600">
+                <Star className="h-3 w-3 fill-current" />
+                <span className="text-[9px] font-black uppercase tracking-widest">Premium</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Header Actions */}
+        <div className="hidden md:flex gap-4 self-start">
+          <button className="rounded-full bg-white border-2 border-[#b08d57]/20 px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all">
+            Excluir
+          </button>
+          <button className="rounded-full bg-[#8c6d45] px-10 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-[#8c6d45]/20 hover:bg-[#725a38] transition-all hover:scale-105 active:scale-95">
+            Salvar
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32">
+        <div className="max-w-4xl mx-auto space-y-12">
+          
+          {/* Main Registration Data */}
+          <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <div className="flex items-center justify-between border-b-2 border-[#b08d57]/15 pb-4">
+              <h3 className="font-serif text-2xl text-[#2a2421]">Dados Cadastrais</h3>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">ID: {formData.id}</p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2">
+              <FormField
+                label="Nome Completo"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                icon={<User className="h-5 w-5" />}
+              />
+              <FormField
+                label="CPF / Documento"
+                name="cpf"
+                value={formData.cpf || ""}
+                onChange={handleChange}
+                placeholder="000.000.000-00"
+                icon={<CreditCard className="h-5 w-5" />}
+              />
+              <FormField
+                label="Telefone Celular"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                placeholder="(00) 00000-0000"
+                icon={<Phone className="h-5 w-5" />}
+              />
+              <FormField
+                label="Instagram Handle"
+                name="instagram"
+                value={formData.instagram}
+                onChange={handleChange}
+                placeholder="usuário (sem @)"
+                icon={<Camera className="h-5 w-5" />}
+              />
+            </div>
+
+            {/* Address Field - Full Width */}
+            <div className="space-y-3">
+              <label className="text-[11px] uppercase tracking-[0.25em] font-extrabold text-[#5c4a33] ml-1">Endereço Completo</label>
+              <div className="relative group">
+                <div className="absolute left-4 top-5 text-[#8c6d45] group-focus-within:text-[#2a2421] transition-colors">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <textarea
+                  name="address"
+                  value={formData.address || ""}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full rounded-2xl border-2 border-[#b08d57]/20 bg-white py-4 pl-12 pr-4 text-base font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+                  placeholder="Rua, número, bairro, cidade - UF"
+                ></textarea>
+              </div>
+            </div>
+          </section>
+
+          {/* Conditional / Credit Section */}
+          <section className="space-y-8 pt-6 border-t-2 border-[#b08d57]/15 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            <div className="flex items-center justify-between">
+              <h3 className="font-serif text-2xl text-[#2a2421]">Venda Condicional & Prazo</h3>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleToggleTrust}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${
+                    formData.isTrusted 
+                      ? "bg-green-100 text-green-700 border border-green-200 hover:bg-green-200" 
+                      : "bg-red-100 text-red-700 border border-red-200 hover:bg-red-200"
+                  }`}
+                >
+                  {formData.isTrusted ? "Liberado" : "Bloqueado"}
+                </button>
+              </div>
+            </div>
+            
+            <div className={`p-10 rounded-[2.5rem] border-2 border-dashed text-center transition-all ${
+              formData.isTrusted 
+                ? "bg-[#f7f2ed]/50 border-[#b08d57]/10" 
+                : "bg-red-50/30 border-red-200/50"
+            }`}>
+              <CreditCard className={`h-10 w-10 mx-auto mb-4 opacity-40 ${formData.isTrusted ? "text-[#8c6d45]" : "text-red-500"}`} />
+              <p className={`text-sm font-medium uppercase tracking-[0.1em] leading-relaxed ${formData.isTrusted ? "text-[#8c6d45]" : "text-red-700"}`}>
+                {formData.isTrusted ? (
+                  <>
+                    Este cliente possui limite aprovado para <span className="font-black text-[#5c4a33]">Condicional</span>.<br/>
+                    Histórico de itens em aberto será exibido aqui.
+                  </>
+                ) : (
+                  <>
+                    Este cliente está <span className="font-black text-red-800">Bloqueado</span> para vendas condicionais.<br/>
+                    A liberação deve ser feita manualmente pela gerência.
+                  </>
+                )}
+              </p>
+
+              {formData.isTrusted ? (
+                <div className="mt-8 space-y-4">
+                  {openConditional ? (
+                    <div className="rounded-[2rem] border border-[#b08d57]/15 bg-white/80 p-5 text-left shadow-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">
+                            Condicional em aberto
+                          </p>
+                          <p className="mt-1 font-serif text-2xl text-[#2a2421]">
+                            {openConditional.items.reduce((sum, item) => sum + item.qtySent, 0)} itens
+                          </p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest ${
+                          openConditionalStatus === "late"
+                            ? "bg-red-100 text-red-700 border border-red-200"
+                            : openConditionalStatus === "due_today"
+                              ? "bg-amber-100 text-amber-700 border border-amber-200"
+                              : "bg-[#f7f2ed] text-[#8c6d45] border border-[#b08d57]/20"
+                        }`}>
+                          {openConditionalStatus === "late"
+                            ? "Atrasado"
+                            : openConditionalStatus === "due_today"
+                              ? "Vence hoje"
+                              : "Em aberto"}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex flex-wrap gap-4 text-[11px] font-bold uppercase tracking-[0.18em] text-[#8c6d45]">
+                        <span>Devolução: {new Date(`${openConditional.dueDate}T00:00:00`).toLocaleDateString("pt-BR")}</span>
+                        <span>Valor enviado: {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(openConditionalValue)}</span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Link
+                      href={`/condicionais?clientId=${formData.id}${openConditional ? "" : "&action=new"}`}
+                      className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] transition-all ${
+                        formData.isTrusted
+                          ? "bg-[#8c6d45] text-white shadow-lg shadow-[#8c6d45]/20 hover:bg-[#725a38]"
+                          : "pointer-events-none bg-[#f3ece5] text-[#c9bfb5]"
+                      }`}
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      {openConditional ? "Ver condicional" : "Abrir condicional"}
+                    </Link>
+
+                    {openConditional ? (
+                      <Link
+                        href="/caixa"
+                        className="inline-flex items-center gap-2 rounded-full border border-[#b08d57]/20 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-[#5c4a33] hover:bg-[#f7f2ed] transition-all"
+                      >
+                        <ArrowUpRight className="h-4 w-4" />
+                        Ir para o caixa
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* Fixed Bottom Bar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#b08d57]/20 flex gap-4 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+        <button className="flex-1 rounded-2xl bg-white border-2 border-[#b08d57]/20 py-4 text-xs font-black uppercase tracking-widest text-[#5c4a33] active:bg-[#f7f2ed] transition-all">
+          Excluir
+        </button>
+        <button className="flex-[2] rounded-2xl bg-[#8c6d45] py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 active:scale-[0.98] transition-all">
+          Salvar Alterações
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, name, value, onChange, icon, placeholder = "", type = "text" }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; icon: ReactElement; placeholder?: string; type?: string }) {
+  return (
+    <div className="space-y-3">
+      <label className="text-[11px] uppercase tracking-[0.25em] font-black text-[#2a2421] ml-1">{label}</label>
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8c6d45] group-focus-within:text-[#2a2421] transition-colors">
+          {icon}
+        </div>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="w-full rounded-2xl border-2 border-[#b08d57]/25 bg-white py-4 pl-12 pr-4 text-base font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\customers\CustomerList.tsx
+==================================================
+"use client";
+
+import { Search, User } from "lucide-react";
+import { useState } from "react";
+import { Client } from "@/types";
+
+interface CustomerListProps {
+  clients: Client[];
+  selectedClientId?: string;
+  onSelectClient: (client: Client) => void;
+}
+
+export function CustomerList({ clients, selectedClientId, onSelectClient }: CustomerListProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredClients = clients.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.instagram.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-white">
+      {/* Search Header */}
+      <div className="p-6 border-b border-[#b08d57]/10 bg-[#fefcfb]">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a69b8f] group-focus-within:text-[#b08d57] transition-colors" />
+          <input
+            type="text"
+            placeholder="Buscar cliente..."
+            className="w-full rounded-2xl border-2 border-[#b08d57]/20 bg-white py-3 pl-11 pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* List Content */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+        {filteredClients.length > 0 ? (
+          filteredClients.map((client) => (
+            <button
+              key={client.id}
+              onClick={() => onSelectClient(client)}
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 text-left group border-2 ${
+                selectedClientId === client.id
+                  ? "bg-[#8c6d45] border-[#8c6d45] text-white shadow-xl shadow-[#8c6d45]/20 scale-[1.02]"
+                  : "bg-white border-[#b08d57]/15 hover:border-[#b08d57]/40 hover:bg-[#fdfbf7] shadow-sm hover:shadow-md"
+              }`}
+            >
+              <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl border-2 border-[#f7f2ed] shadow-sm">
+                <img
+                  src={client.photo || `https://unavatar.io/instagram/${client.instagram}`}
+                  alt={client.name}
+                  className="h-full w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(client.name)}&background=f7f2ed&color=8c6d45`;
+                  }}
+                />
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <h3 className={`font-serif text-lg leading-tight truncate ${
+                  selectedClientId === client.id ? "text-white" : "text-[#2a2421]"
+                }`}>
+                  {client.name}
+                </h3>
+                <p className={`text-[10px] font-black uppercase tracking-widest truncate mt-0.5 ${
+                  selectedClientId === client.id ? "text-white/70" : "text-[#5c4a33]"
+                }`}>
+                  @{client.instagram}
+                </p>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center opacity-30">
+            <User className="h-12 w-12 mb-2" />
+            <p className="text-sm font-medium uppercase tracking-widest">Nenhum cliente</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+

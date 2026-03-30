@@ -1,0 +1,11 @@
+flowchart TD
+    A[Início da venda] --> B[Buscar ou bipar produto]
+    B --> C[Adicionar ao carrinho]
+    C --> D[Ajustar quantidades e desconto]
+    D --> E{Produto ligado a lista?}
+    E -- Sim --> F[Alertar vínculo com lista]
+    E -- Não --> G[Seguir venda]
+    F --> G
+    G --> H[Registrar pagamentos]
+    H --> I[Finalizar venda]
+    I --> J[Comprovante simulado]

@@ -1,0 +1,14 @@
+flowchart TD
+    A[Selecionar cliente habilitado] --> B[Adicionar itens da retirada]
+    B --> C[Bipar ou selecionar manualmente]
+    C --> D[Definir devolução prevista]
+    D --> E[Criar condicional]
+    E --> F[Gerar recibo]
+    F --> G[Cliente retorna à loja]
+    G --> H[Revisar item a item]
+    H --> I{Item será comprado?}
+    I -- Sim --> J[Enviar ao caixa]
+    I -- Não --> K[Registrar devolução]
+    J --> L[Concluir pagamento]
+    K --> M[Encerrar condicional]
+    L --> M

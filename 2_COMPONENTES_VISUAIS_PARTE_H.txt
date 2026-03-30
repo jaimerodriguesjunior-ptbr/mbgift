@@ -1,0 +1,526 @@
+=== CONTEÚDO PARCIAL: 2_COMPONENTES_VISUAIS_PARTE_H.txt ===
+=== CONTÉM 3 ARQUIVOS ===
+
+
+==================================================
+ARQUIVO: .\src\components\products\ProductDetail.tsx
+==================================================
+"use client";
+
+import { Camera, Check, Plus, Minus, Trash2, X, Barcode as BarcodeIcon, Package, Tag, Coins, RefreshCw, Printer } from "lucide-react";
+import { useState, useRef, useEffect, ReactElement } from "react";
+// @ts-ignore
+import Barcode from 'react-barcode';
+import { Product } from "@/types";
+
+interface ProductDetailProps {
+  product: Product | null;
+  onUpdate: (updatedProduct: Product) => void;
+  reservedStock?: number;
+  availableStock?: number;
+}
+
+export function ProductDetail({ product, onUpdate, reservedStock = 0, availableStock }: ProductDetailProps) {
+  const [formData, setFormData] = useState<Product | null>(product);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setFormData(product);
+  }, [product]);
+
+  if (!product || !formData) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center text-center p-12 opacity-50">
+        <div className="mb-6 rounded-full bg-[#b08d57]/5 p-8 border border-[#b08d57]/10">
+          <Package className="h-16 w-16 text-[#b08d57]" strokeWidth={1} />
+        </div>
+        <h2 className="font-serif text-3xl text-[#5c4a33]">Selecione um produto</h2>
+        <p className="mt-2 text-[#a69b8f] max-w-sm">
+          Escolha um item da lista ao lado para visualizar e editar os detalhes completos.
+        </p>
+      </div>
+    );
+  }
+
+  const handleGenerateEAN = () => {
+    // Generate an internal-use 13-digit code
+    const randomPart = Math.floor(Math.random() * 100000000000).toString().padStart(11, '0');
+    const newEan = `27${randomPart}`.slice(0, 13);
+    const updated = { ...formData, ean: newEan };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const handleStockChange = (amount: number) => {
+    const newStock = Math.max(reservedStock, formData.stock + amount);
+    const updated = { ...formData, stock: newStock };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numericValue = name === "price" || name === "stock" ? Number(value) : value;
+    const updated = {
+      ...formData,
+      [name]: name === "stock" ? Math.max(reservedStock, Number(numericValue)) : numericValue,
+    };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const handleAddPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const newUrls = Array.from(files).map((file) => URL.createObjectURL(file));
+      const updated = { ...formData, images: [...formData.images, ...newUrls] };
+      setFormData(updated);
+      onUpdate(updated);
+    }
+  };
+
+  const handleSetMain = (index: number) => {
+    const updated = { ...formData, mainImageIndex: index };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  const handleDeletePhoto = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    let newMainIndex = formData.mainImageIndex;
+    if (index === formData.mainImageIndex) newMainIndex = 0;
+    else if (index < formData.mainImageIndex) newMainIndex--;
+
+    const updated = {
+      ...formData,
+      images: newImages,
+      mainImageIndex: Math.max(0, newMainIndex),
+    };
+    setFormData(updated);
+    onUpdate(updated);
+  };
+
+  return (
+      <div className="flex h-full flex-col bg-[#fefcfb] custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-700 relative">
+      {/* Desktop Header - Hidden on Mobile focus */}
+      <div className="hidden md:flex mb-12 items-center justify-between border-b-2 border-[#b08d57]/15 pb-8 p-8 sm:p-12">
+        <div className="flex xitems-center gap-4">
+          <div>
+            <h2 className={`font-serif text-4xl tracking-tight transition-colors ${formData.isDraft ? 'text-amber-700' : 'text-[#2a2421]'}`}>
+              {formData.name}
+            </h2>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#8c6d45]">Edição de produto</p>
+              {formData.isDraft && (
+                <span className="bg-amber-100 text-amber-700 text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-[0.1em] border border-amber-200">
+                  Novo Bip
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex gap-4">
+          <button className="rounded-full bg-white border-2 border-[#b08d57]/20 px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm">
+            Descartar
+          </button>
+          <button 
+            onClick={() => {
+              const updated = { ...formData, isDraft: false };
+              setFormData(updated);
+              onUpdate(updated);
+            }}
+            className="rounded-full bg-[#8c6d45] px-10 py-2.5 text-xs font-bold uppercase tracking-widest text-white shadow-xl shadow-[#8c6d45]/20 hover:bg-[#725a38] hover:scale-105 active:scale-95 transition-all"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+
+      {/* Draft Warning Banner */}
+      {formData.isDraft && (
+        <div className="mx-8 mt-2 mb-0 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+              <RefreshCw className="h-4 w-4 text-amber-600 animate-spin-slow" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">Produto Identificado via Cosmos</p>
+              <p className="text-[11px] text-amber-700 italic">Preenchemos os dados automaticamente. Revise os campos e clique em <b>Salvar</b> para finalizar.</p>
+            </div>
+          </div>
+          <div className="hidden sm:block">
+             <span className="text-[9px] font-bold text-amber-500 border border-amber-200 px-2 py-1 rounded-md bg-white">RASCUNHO</span>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Title - Only on small screens */}
+      <div className="md:hidden p-6 border-b border-[#b08d57]/10 bg-white/80 backdrop-blur-md">
+        <h2 className="font-serif text-2xl text-[#2a2421] leading-tight mb-1">{formData.name}</h2>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[#8c6d45]">Atualização Rápida</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 md:p-12 pb-32">
+        <div className="flex flex-col xl:flex-row gap-12">
+          <div className="flex-1 space-y-12">
+            {/* Desktop-only fields */}
+            <div className="hidden md:grid gap-8">
+              <FormField
+                label="Nome do Produto"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                icon={<Tag className="h-5 w-5" />}
+              />
+              <div className="grid gap-8 sm:grid-cols-2">
+                <FormField
+                  label="Categoria"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  icon={<Package className="h-5 w-5" />}
+                />
+                <div className="relative">
+                  <FormField
+                    label="EAN (Código de barras)"
+                    name="ean"
+                    value={formData.ean}
+                    onChange={handleChange}
+                    icon={<BarcodeIcon className="h-5 w-5" />}
+                  />
+                  {!formData.ean && (
+                    <button 
+                      onClick={handleGenerateEAN}
+                      className="absolute right-3 top-[42px] flex items-center gap-2 rounded-lg bg-[#b08d57]/10 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-[#8c6d45] hover:bg-[#b08d57]/20 transition-all border border-[#b08d57]/20"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Gerar
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Barcode Display - Hidden on Mobile Focus as per user request */}
+            <div className="hidden md:block">
+              {formData.ean && (
+                <div className="flex items-center gap-6 rounded-2xl border-2 border-[#b08d57]/10 bg-white p-3 shadow-sm max-w-sm">
+                  <div className="bg-white p-1 rounded-lg">
+                    <Barcode value={formData.ean} width={1.2} height={40} fontSize={10} margin={0} background="transparent" />
+                  </div>
+                  <button className="flex flex-col items-center gap-1 text-[#8c6d45] hover:text-[#5c4a33] transition-colors pr-2">
+                    <Printer className="h-5 w-5" />
+                    <span className="text-[8px] font-black uppercase tracking-tighter">Imprimir</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Photo Gallery - TOP Hero on Mobile, Bottom on Desktop */}
+            <div className="space-y-6 md:order-last">
+              <div className="flex items-center justify-between">
+                <h3 className="font-serif text-2xl text-[#2a2421]">Galeria de Fotos</h3>
+                <p className="text-[10px] uppercase tracking-widest text-[#8c6d45] font-bold">Capacidade: 10</p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
+                {formData.images.map((img, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`group relative aspect-square overflow-hidden rounded-2xl border-2 transition-all duration-300 ${
+                      formData.mainImageIndex === idx ? 'border-[#8c6d45] shadow-lg scale-[1.02]' : 'border-[#b08d57]/10 hover:border-[#b08d57]/40 shadow-sm'
+                    }`}
+                  >
+                    <img src={img} className="h-full w-full object-cover" alt={`Foto ${idx + 1}`} />
+                    <div className="absolute inset-0 bg-[#2a2421]/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                      {formData.mainImageIndex !== idx && (
+                        <button 
+                          onClick={() => handleSetMain(idx)}
+                          className="rounded-full bg-white px-4 py-2 text-[10px] uppercase font-extrabold text-[#5c4a33] hover:bg-[#f7f2ed]"
+                        >
+                          Capa
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeletePhoto(idx)}
+                        className="rounded-full bg-red-600 p-2.5 text-white hover:bg-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex aspect-square flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#8c6d45]/40 bg-white text-[#8c6d45] hover:bg-[#b08d57]/5 hover:border-[#8c6d45] transition-all group p-4"
+                >
+                  <Camera className="h-10 w-10 mb-2 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] uppercase font-black tracking-widest text-center">Tirar / Adicionar Foto</span>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" capture="environment" multiple onChange={handleAddPhoto} />
+                </button>
+              </div>
+            </div>
+
+            {/* Stock Control - Below Photos on Mobile */}
+            <div className="bg-white/40 md:bg-transparent p-6 md:p-0 rounded-3xl border border-[#b08d57]/10 md:border-0 shadow-sm md:shadow-none">
+              <div className="space-y-6">
+                <div className="md:grid md:gap-8 md:grid-cols-2">
+                  <div className="hidden md:block">
+                    <FormField
+                      label="Preço de Venda"
+                      name="price"
+                      type="number"
+                      value={formData.price.toString()}
+                      onChange={handleChange}
+                      icon={<Coins className="h-5 w-5" />}
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <label className="text-[12px] md:text-[11px] uppercase tracking-[0.25em] font-black text-[#5c4a33] block">Atualizar Quantidade</label>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-[#b08d57]/15 bg-[#fdfbf7] px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.25em] text-[#8c6d45]">Disponível</p>
+                        <p className="mt-2 font-serif text-2xl text-[#2a2421]">{availableStock ?? formData.stock}</p>
+                      </div>
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3">
+                        <p className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-700">Em condicional</p>
+                        <p className="mt-2 font-serif text-2xl text-amber-800">{reservedStock}</p>
+                      </div>
+                    </div>
+                    <div className="flex h-20 md:h-[62px] items-center gap-2 rounded-2xl border-2 border-[#b08d57]/30 bg-white p-1 shadow-md md:shadow-sm">
+                      <button 
+                        onClick={() => handleStockChange(-1)}
+                        className="flex h-full w-16 md:w-14 items-center justify-center rounded-xl bg-[#f7f2ed] text-[#8c6d45] hover:bg-[#b08d57]/10 active:scale-95 transition-all border-2 border-transparent"
+                      >
+                        <Minus className="h-7 w-7 md:h-6 md:w-6" />
+                      </button>
+                      <input
+                        type="number"
+                        name="stock"
+                        value={formData.stock}
+                        onChange={handleChange}
+                          className="h-full min-w-0 flex-1 text-center text-4xl md:text-xl font-black text-[#2a2421] focus:outline-none bg-transparent"
+                          min={reservedStock}
+                        />
+                      <button 
+                        onClick={() => handleStockChange(1)}
+                        className="flex h-full w-16 md:w-14 items-center justify-center rounded-xl bg-[#8c6d45] text-white hover:bg-[#725a38] active:scale-95 transition-all shadow-lg shadow-[#8c6d45]/20"
+                      >
+                        <Plus className="h-7 w-7 md:h-6 md:w-6" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Preview Card */}
+          <div className="hidden xl:block w-72 flex-shrink-0 space-y-6">
+            <h3 className="font-serif text-xl text-[#2a2421] border-b-2 border-[#b08d57]/20 pb-3">Cartão de Vitrine</h3>
+            <div className="overflow-hidden rounded-[2rem] border-2 border-white bg-white shadow-2xl">
+              <div className="relative aspect-[4/5]">
+                <img src={formData.images[formData.mainImageIndex]} className="h-full w-full object-cover" alt="Principal" />
+                <div className="absolute bottom-4 left-4 right-4 p-5 rounded-2xl bg-white/90 backdrop-blur-md border border-white/50 shadow-md">
+                  <h4 className="font-serif text-lg text-[#2a2421] truncate leading-tight mb-1">{formData.name}</h4>
+                  <div className="flex items-end justify-between mt-3">
+                    <span className="text-xl font-bold tracking-tight text-[#8c6d45]">{formData.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                    <span className={`px-2.5 py-1 text-[9px] uppercase font-extrabold tracking-widest rounded-full border-2 ${(availableStock ?? formData.stock) <= 3 ? 'bg-red-50 text-red-600 border-red-200' : 'bg-green-50 text-green-700 border-green-200'}`}>DISP: {availableStock ?? formData.stock}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed Bottom Bar - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#b08d57]/20 flex gap-4 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+        <button className="flex-1 rounded-2xl bg-white border-2 border-[#b08d57]/20 py-4 text-xs font-black uppercase tracking-widest text-[#5c4a33] active:bg-[#f7f2ed] transition-all">
+          Descartar
+        </button>
+        <button className="flex-[2] rounded-2xl bg-[#8c6d45] py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 active:scale-[0.98] transition-all">
+          Salvar Alterações
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FormField({ label, name, value, onChange, icon, type = "text" }: { label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; icon: ReactElement; type?: string }) {
+  return (
+    <div className="space-y-3">
+      <label className="text-[11px] uppercase tracking-[0.25em] font-black text-[#2a2421] ml-1">{label}</label>
+      <div className="relative group">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8c6d45] group-focus-within:text-[#2a2421] transition-colors">
+          {icon}
+        </div>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full rounded-2xl border-2 border-[#b08d57]/25 bg-white py-4 pl-12 pr-4 text-base font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-8 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\products\ProductList.tsx
+==================================================
+import { Search } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Product } from "@/types";
+
+interface ProductListProps {
+  products: Product[];
+  selectedProductId?: string;
+  onSelectProduct: (product: Product) => void;
+  onEanNotFound?: (ean: string) => void;
+  stockMeta?: Record<string, { available: number; reserved: number }>;
+}
+
+export function ProductList({ products, selectedProductId, onSelectProduct, onEanNotFound, stockMeta = {} }: ProductListProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus search input for scanner ready
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Auto-select if EAN matches exactly
+  useEffect(() => {
+    if (searchTerm.length >= 8) {
+      const matched = products.find(p => p.ean === searchTerm);
+      if (matched) {
+        onSelectProduct(matched);
+        setSearchTerm("");
+      } else if (searchTerm.length === 12 || searchTerm.length === 13) {
+        // Potential UPC (12) or EAN-13 (13) scanned but not found locally
+        if (onEanNotFound) {
+          onEanNotFound(searchTerm);
+          setSearchTerm("");
+        }
+      }
+    }
+  }, [searchTerm, products, onSelectProduct, onEanNotFound]);
+
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.ean && p.ean.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  return (
+    <div className="flex h-full flex-col bg-white/40 backdrop-blur-md border-r border-[#b08d57]/10">
+      <div className="p-6 border-b border-[#b08d57]/10">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a69b8f] group-focus-within:text-[#b08d57] transition-colors" />
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Buscar produto..."
+            className="w-full rounded-2xl border-2 border-[#b08d57]/30 bg-white py-3.5 pl-11 pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-2 custom-scrollbar">
+        {filteredProducts.map((product) => {
+          const isSelected = product.id === selectedProductId;
+          const meta = stockMeta[product.id] ?? { available: product.stock, reserved: 0 };
+          return (
+            <button
+              key={product.id}
+              onClick={() => onSelectProduct(product)}
+              className={`group flex w-full items-center gap-4 rounded-2xl p-3 text-left transition-all duration-300 border-2 ${
+                isSelected
+                  ? "bg-[#b08d57] border-[#b08d57] shadow-xl shadow-[#b08d57]/20 scale-[1.02]"
+                  : "bg-white border-[#b08d57]/15 hover:border-[#b08d57]/40 hover:bg-[#fdfbf7] shadow-sm hover:shadow-md"
+              }`}
+            >
+              <div className={`relative h-14 w-14 overflow-hidden rounded-xl border-2 shadow-sm transition-transform duration-500 group-hover:scale-105 ${isSelected ? 'border-white/30 ring-2 ring-white/20' : 'border-[#f7f2ed]'}`}>
+                <img
+                  src={product.images[product.mainImageIndex]}
+                  alt={product.name}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`truncate font-serif text-lg transition-colors ${isSelected ? "text-white font-medium" : "text-[#2a2421]"}`}>
+                  {product.name}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  {product.isDraft ? (
+                    <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter ${isSelected ? 'bg-white text-[#8c6d45]' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
+                      Bip-Novo
+                    </span>
+                  ) : (
+                    <>
+                      <span className={`text-[10px] uppercase tracking-widest font-extrabold ${isSelected ? "text-white/90" : "text-[#5c4a33]"}`}>
+                        Disp.: {meta.available}
+                      </span>
+                      {meta.reserved > 0 ? (
+                        <>
+                          <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-white/40' : 'bg-[#b08d57]/40'}`} />
+                          <span className={`text-[9px] uppercase tracking-widest font-extrabold ${isSelected ? "text-white/80" : "text-amber-700"}`}>
+                            Condic.: {meta.reserved}
+                          </span>
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                  <span className={`h-1 w-1 rounded-full ${isSelected ? 'bg-white/40' : 'bg-[#b08d57]/40'}`} />
+                  <span className={`text-[10px] uppercase tracking-widest font-extrabold ${isSelected ? "text-white/90" : "text-[#8c6d45]"}`}>
+                    {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </span>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+
+        {filteredProducts.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center opacity-40">
+            <Search className="h-10 w-10 mb-4 text-[#a69b8f]" />
+            <p className="text-sm font-medium text-[#5c4a33]">Nenhum produto encontrado</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+==================================================
+ARQUIVO: .\src\components\ui\Badge.tsx
+==================================================
+type BadgeProps = {
+  children: string;
+  tone?: "default" | "low-stock" | "disponivel" | "reservado" | "comprado";
+};
+
+const toneStyles = {
+  default: "bg-white text-ink ring-1 ring-black/10",
+  "low-stock": "bg-[#f7e3d1] text-[#8c4a15]",
+  disponivel: "bg-[#eef4ec] text-[#466244]",
+  reservado: "bg-[#fbefcf] text-[#89651d]",
+  comprado: "bg-[#efe7ea] text-[#6f5060]"
+};
+
+export function Badge({ children, tone = "default" }: BadgeProps) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${toneStyles[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
