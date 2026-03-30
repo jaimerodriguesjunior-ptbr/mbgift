@@ -115,7 +115,7 @@ export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
             className="flex items-center gap-3 rounded-full bg-white border-2 border-[#b08d57]/20 px-8 py-3 text-[11px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm group"
           >
             <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            Ver lista pública
+            Ver tela dos convidados
           </a>
         </div>
       </div>
