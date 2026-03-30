@@ -3,6 +3,7 @@ import type { Client } from "@/types";
 export type ClientWriteInput = {
   name?: string;
   phone?: string | null;
+  email?: string | null;
   instagram?: string | null;
   photo?: string | null;
   cpf?: string | null;
@@ -14,6 +15,7 @@ type ClientInsertRow = {
   tenant_id: string;
   name: string;
   phone: string | null;
+  email: string | null;
   instagram: string | null;
   photo_url: string | null;
   cpf: string | null;
@@ -62,6 +64,7 @@ export function buildClientWriteInput(input: unknown, mode: "create" | "update")
         ? undefined
         : normalizeRequiredString(source.name, "name"),
     phone: normalizeOptionalString(source.phone),
+    email: normalizeOptionalString(source.email),
     instagram: normalizeOptionalString(source.instagram),
     photo: normalizeOptionalString(source.photo),
     cpf: normalizeOptionalString(source.cpf),
@@ -75,6 +78,7 @@ export function clientInputToInsertRow(tenantId: string, input: ClientWriteInput
     tenant_id: tenantId,
     name: input.name ?? "",
     phone: input.phone ?? null,
+    email: input.email ?? null,
     instagram: input.instagram ?? null,
     photo_url: input.photo ?? null,
     cpf: input.cpf ?? null,
@@ -92,6 +96,10 @@ export function clientInputToUpdateRow(input: ClientWriteInput): ClientUpdateRow
 
   if (input.phone !== undefined) {
     row.phone = input.phone;
+  }
+
+  if (input.email !== undefined) {
+    row.email = input.email;
   }
 
   if (input.instagram !== undefined) {

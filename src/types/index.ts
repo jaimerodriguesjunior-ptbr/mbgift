@@ -42,6 +42,7 @@ export type Client = {
   id: string;
   name: string;
   phone: string;
+  email?: string;
   instagram: string;
   photo?: string;
   cpf?: string;

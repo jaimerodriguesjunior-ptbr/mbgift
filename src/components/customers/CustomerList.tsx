@@ -16,7 +16,8 @@ export function CustomerList({ clients, selectedClientId, onSelectClient }: Cust
   const filteredClients = clients.filter(
     (c) =>
       c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.instagram.toLowerCase().includes(searchTerm.toLowerCase())
+      c.instagram.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.email ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -68,7 +69,7 @@ export function CustomerList({ clients, selectedClientId, onSelectClient }: Cust
                 <p className={`text-[10px] font-black uppercase tracking-widest truncate mt-0.5 ${
                   selectedClientId === client.id ? "text-white/70" : "text-[#5c4a33]"
                 }`}>
-                  @{client.instagram}
+                  {client.email || `@${client.instagram}`}
                 </p>
               </div>
             </button>

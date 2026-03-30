@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, Camera, Phone, User, Check, Star, MapPin, CreditCard, Gift, ClipboardList, ArrowUpRight } from "lucide-react";
+import { MessageCircle, Camera, Phone, User, Check, Star, MapPin, CreditCard, Gift, ClipboardList, ArrowUpRight, Mail } from "lucide-react";
 import { useState, ReactElement, useEffect } from "react";
 import Link from "next/link";
 import { Client, ConditionalRecord } from "@/types";
@@ -231,6 +231,15 @@ export function CustomerDetail({ client, onUpdate, onSave, isSaving, onDelete, i
                 onChange={handleChange}
                 placeholder="(00) 00000-0000"
                 icon={<Phone className="h-5 w-5" />}
+              />
+              <FormField
+                label="E-mail"
+                name="email"
+                value={formData.email || ""}
+                onChange={handleChange}
+                placeholder="cliente@exemplo.com"
+                type="email"
+                icon={<Mail className="h-5 w-5" />}
               />
               <FormField
                 label="Perfil do Instagram"

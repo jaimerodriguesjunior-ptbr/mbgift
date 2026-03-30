@@ -8,6 +8,7 @@ type ClientRow = {
   tenant_id: string;
   name: string;
   phone: string | null;
+  email: string | null;
   instagram: string | null;
   photo_url: string | null;
   cpf: string | null;
@@ -19,6 +20,7 @@ type ClientInsertRow = {
   tenant_id: string;
   name: string;
   phone: string | null;
+  email: string | null;
   instagram: string | null;
   photo_url: string | null;
   cpf: string | null;
@@ -41,6 +43,7 @@ function mapClientRow(row: ClientRow): Client {
     tenant_id: row.tenant_id,
     name: row.name,
     phone: row.phone ?? "",
+    email: row.email ?? undefined,
     instagram: row.instagram ?? "",
     photo: row.photo_url ?? undefined,
     cpf: row.cpf ?? undefined,
@@ -54,6 +57,7 @@ const CLIENT_COLUMNS = `
   tenant_id,
   name,
   phone,
+  email,
   instagram,
   photo_url,
   cpf,
@@ -72,7 +76,7 @@ export async function listClientsByTenant(tenantId: string, query?: string) {
   const normalizedQuery = query?.trim();
   if (normalizedQuery) {
     request = request.or(
-      `name.ilike.%${normalizedQuery}%,phone.ilike.%${normalizedQuery}%,instagram.ilike.%${normalizedQuery}%,cpf.ilike.%${normalizedQuery}%`
+      `name.ilike.%${normalizedQuery}%,phone.ilike.%${normalizedQuery}%,email.ilike.%${normalizedQuery}%,instagram.ilike.%${normalizedQuery}%,cpf.ilike.%${normalizedQuery}%`
     );
   }
 

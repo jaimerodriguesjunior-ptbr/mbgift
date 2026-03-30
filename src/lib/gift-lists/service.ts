@@ -21,7 +21,8 @@ import {
   removeGiftListItem,
   reserveGiftListItem,
   resolveTenantIdBySlug,
-  updateGiftList
+  updateGiftList,
+  updateGiftListToken
 } from "@/lib/gift-lists/repository";
 import { generateHostAccessToken, hashHostAccessToken, verifyHostAccessToken } from "@/lib/gift-lists/tokens";
 import type { GiftListRecord } from "@/lib/gift-lists/types";
@@ -308,4 +309,25 @@ export async function reservePublicGiftBySlug(slug: string, input: unknown, tena
   }
 
   return getPublicGiftListBySlug(slug, tenantSlug);
+}
+
+export async function regenerateCurrentTenantGiftListToken(giftListId: string) {
+  const membership = await requireCurrentTenantId();
+  assertCanManageTenant(membership.role);
+
+  const hostAccessToken = generateHostAccessToken();
+  const giftList = await updateGiftListToken(
+    membership.tenantId, 
+    giftListId, 
+    hashHostAccessToken(hostAccessToken)
+  );
+
+  if (!giftList) {
+    throw new Error("Lista nao encontrada para atualizacao de token.");
+  }
+
+  return {
+    giftList: await attachProductsOrNull(giftList),
+    hostAccessToken
+  };
 }

@@ -1243,17 +1243,6 @@ export default function CaixaPage() {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black uppercase tracking-widest text-[#5c4a33]">Cliente Cadastrado</label>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-3 shadow-sm focus-within:border-[#8c6d45] transition-all">
-                      <Search className="h-4 w-4 text-[#b08d57]" />
-                      <input
-                        type="text"
-                        placeholder="Buscar por nome, telefone, CPF ou Instagram"
-                        value={clientSearchTerm}
-                        onChange={(e) => setClientSearchTerm(e.target.value)}
-                        className="flex-1 bg-transparent text-sm font-bold text-[#2a2421] focus:outline-none placeholder-[#c9bfb5]"
-                      />
-                    </div>
-
                     {selectedClient ? (
                       <div className="flex items-center justify-between rounded-2xl border border-[#b08d57]/15 bg-[#fdfbf7] px-4 py-3">
                         <div>
@@ -1273,9 +1262,20 @@ export default function CaixaPage() {
                           Limpar
                         </button>
                       </div>
-                    ) : null}
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-2xl border-2 border-[#b08d57]/25 bg-white px-4 py-3 shadow-sm focus-within:border-[#8c6d45] transition-all">
+                        <Search className="h-4 w-4 text-[#b08d57]" />
+                        <input
+                          type="text"
+                          placeholder="Buscar por nome, telefone, CPF ou Instagram"
+                          value={clientSearchTerm}
+                          onChange={(e) => setClientSearchTerm(e.target.value)}
+                          className="flex-1 bg-transparent text-sm font-bold text-[#2a2421] focus:outline-none placeholder-[#c9bfb5]"
+                        />
+                      </div>
+                    )}
 
-                    {normalizedClientNeedle.length >= 2 ? (
+                    {!selectedClient && normalizedClientNeedle.length >= 2 ? (
                       <div className="max-h-56 overflow-y-auto rounded-2xl border border-[#b08d57]/15 bg-[#fffdfb] p-2">
                         {filteredClients.length > 0 ? (
                           filteredClients.map((client) => (
@@ -1308,17 +1308,13 @@ export default function CaixaPage() {
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <p className="px-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#a69b8f]">
-                        Digite pelo menos 2 caracteres para localizar um cliente.
-                      </p>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => setShowCpfModal(false)} className="flex-1 rounded-2xl border-2 border-[#b08d57]/20 py-3.5 text-xs font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all">
+                <button onClick={() => { setCpf(""); setSelectedClientId(""); setClientSearchTerm(""); setShowCpfModal(false); }} className="flex-1 rounded-2xl border-2 border-[#b08d57]/20 py-3.5 text-xs font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] transition-all">
                   Cancelar
                 </button>
                 <button onClick={() => setShowCpfModal(false)} className="flex-1 rounded-2xl bg-[#8c6d45] py-3.5 text-xs font-black uppercase tracking-widest text-white hover:bg-[#725a38] transition-all shadow-lg shadow-[#8c6d45]/20">

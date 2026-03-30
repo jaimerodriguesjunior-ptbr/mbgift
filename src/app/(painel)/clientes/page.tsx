@@ -65,6 +65,7 @@ export default function ClientesPage() {
       id: `draft-${crypto.randomUUID()}`,
       name: "Novo Cliente",
       phone: "",
+      email: "",
       instagram: "",
       cpf: "",
       address: "",
@@ -116,6 +117,7 @@ export default function ClientesPage() {
         const created = await createClient({
           name: clientToSave.name,
           phone: clientToSave.phone,
+          email: clientToSave.email,
           instagram: clientToSave.instagram,
           cpf: clientToSave.cpf,
           address: clientToSave.address,

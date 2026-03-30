@@ -1,10 +1,10 @@
 "use client";
 
-import { Calendar, MapPin, ExternalLink, Gift, Plus, Check, RotateCcw } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, Gift, Plus, Check, RotateCcw, RefreshCcw, Copy, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type GiftItemStatus } from "@/types";
 import type { GiftListItemRecord, GiftListRecord } from "@/lib/gift-lists/types";
-import { cancelGiftListItemReservation } from "@/lib/painel-api";
+import { cancelGiftListItemReservation, regenerateGiftListToken } from "@/lib/painel-api";
 
 interface GiftListDetailProps {
   list: GiftListRecord | null;
@@ -14,6 +14,8 @@ interface GiftListDetailProps {
 export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
   const [formData, setFormData] = useState<GiftListRecord | null>(list);
   const [processingItemId, setProcessingItemId] = useState<string | null>(null);
+  const [hostLinkToken, setHostLinkToken] = useState<string | null>(null);
+  const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
 
   useEffect(() => {
     setFormData(list);
@@ -68,6 +70,27 @@ export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
     }
   }
 
+  async function handleRegenerateToken() {
+    if (!window.confirm("Gerar um novo link irá invalidar o link anterior imediatamente. Tem certeza?")) {
+      return;
+    }
+    
+    try {
+      setIsRegeneratingToken(true);
+      const result = await regenerateGiftListToken(currentGiftListId);
+      if (!result.giftList || !result.hostAccessToken) {
+        throw new Error("Não foi possível gerar um novo link.");
+      }
+      setHostLinkToken(result.hostAccessToken);
+      setFormData(result.giftList);
+      onUpdate(result.giftList);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Falha ao gerar o token.");
+    } finally {
+      setIsRegeneratingToken(false);
+    }
+  }
+
   return (
     <div className="flex h-full flex-col bg-white overflow-hidden custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-700">
       <div className="flex flex-col md:flex-row items-center md:items-end justify-between px-8 pt-8 md:px-12 md:pt-14 border-b border-[#b08d57]/10 pb-10 bg-[#fdfbf7]/50 relative overflow-hidden group">
@@ -107,16 +130,56 @@ export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
           </div>
         </div>
 
-        <div className="mt-8 md:mt-0 flex gap-4 z-10 self-center md:self-end">
-          <a
-            href={`/lista/${formData.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-full bg-white border-2 border-[#b08d57]/20 px-8 py-3 text-[11px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm group"
-          >
-            <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-            Ver tela dos convidados
-          </a>
+        <div className="mt-8 md:mt-0 flex flex-col items-center md:items-end gap-3 z-10 w-full md:w-auto">
+          <div className="flex flex-wrap items-center justify-center md:justify-end gap-4">
+            <button
+              onClick={handleRegenerateToken}
+              disabled={isRegeneratingToken}
+              className="flex items-center gap-3 rounded-full bg-white border-2 border-[#b08d57]/20 px-6 py-3 text-[11px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm group disabled:opacity-50"
+            >
+              <RefreshCcw className={`h-4 w-4 ${isRegeneratingToken ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}`} />
+              {isRegeneratingToken ? "Gerando..." : "Gerar Link de Anfitrião"}
+            </button>
+            <a
+              href={`/lista/${formData.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-full bg-white border-2 border-[#b08d57]/20 px-6 py-3 text-[11px] font-black uppercase tracking-widest text-[#5c4a33] hover:bg-[#f7f2ed] hover:border-[#b08d57]/40 transition-all shadow-sm group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              Ver tela dos convidados
+            </a>
+          </div>
+
+          {hostLinkToken && (
+            <div className="animate-in fade-in slide-in-from-top-2 p-5 bg-amber-50 border-2 border-amber-200 rounded-[2rem] shadow-xl w-full max-w-md mt-2">
+              <div className="flex justify-between items-center mb-2">
+                <p className="text-[11px] font-black uppercase text-amber-800 tracking-widest">Novo Link Gerado!</p>
+                <button onClick={() => setHostLinkToken(null)} className="text-amber-600 hover:text-amber-900 transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <p className="text-[10px] text-amber-700 italic mb-4 leading-relaxed">
+                Copie este link agora. Por medidas de segurança, ele não será exibido caso você recarregue ou feche a página.
+              </p>
+              <div className="flex bg-white border-2 border-amber-200 rounded-2xl overflow-hidden p-1 shadow-sm">
+                <input 
+                  readOnly 
+                  value={`${window.location.origin}/lista/${formData.slug}/editar?token=${hostLinkToken}`} 
+                  className="flex-1 px-4 py-2 text-xs font-semibold text-[#2a2421] bg-transparent outline-none truncate"
+                  onFocus={(e) => e.target.select()}
+                />
+                <button 
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/lista/${formData.slug}/editar?token=${hostLinkToken}`)}
+                  className="flex items-center justify-center bg-amber-600 text-white rounded-xl px-4 py-2 hover:bg-amber-700 transition-colors text-[10px] font-black uppercase tracking-widest gap-2"
+                  title="Copiar Link"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copiar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

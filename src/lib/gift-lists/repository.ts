@@ -492,3 +492,26 @@ export async function purchaseGiftListItem(
 
   return data ? mapGiftListItemRow(data as GiftListItemRow) : null;
 }
+
+export async function updateGiftListToken(tenantId: string, giftListId: string, hostAccessTokenHash: string) {
+  const supabase = getSupabaseAdminClient() as any;
+  const { data, error } = await supabase
+    .from("gift_lists")
+    .update({ host_access_token_hash: hostAccessTokenHash })
+    .eq("tenant_id", tenantId)
+    .eq("id", giftListId)
+    .select(GIFT_LIST_COLUMNS)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Falha ao atualizar token da lista: ${error.message}`);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const [list] = await hydrateGiftLists([data as GiftListRow]);
+  return list ?? null;
+}
+

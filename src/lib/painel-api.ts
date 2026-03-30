@@ -500,3 +500,17 @@ export async function removeHostGiftListItem(
 
   return payload.giftList as GiftListRecord | null;
 }
+
+export async function regenerateGiftListToken(giftListId: string) {
+  const payload = await parseJson(
+    await fetch(`/api/gift-lists/${giftListId}/token`, {
+      method: "POST"
+    })
+  );
+
+  return {
+    giftList: (payload.giftList ?? null) as GiftListRecord | null,
+    hostAccessToken: typeof payload.hostAccessToken === "string" ? payload.hostAccessToken : ""
+  };
+}
+
