@@ -12,6 +12,7 @@ import { formatCurrency } from "@/lib/utils";
 import {
   closeConditionalAsReturned,
   createConditional,
+  deleteConditionalById,
   fetchClients,
   fetchConditionals,
   fetchCurrentTenantSettings,
@@ -68,6 +69,7 @@ export default function CondicionaisPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [storeLabel, setStoreLabel] = useState("MBGifts");
+  const [showExpired, setShowExpired] = useState(false);
   const queryHandledRef = useRef(false);
 
   const selectedConditional = conditionals.find((entry) => entry.id === selectedConditionalId) ?? null;
@@ -168,6 +170,28 @@ export default function CondicionaisPage() {
     });
   }, [clients, conditionals, searchTerm]);
 
+  const thirtyDaysAgo = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
+  }, []);
+
+  const visibleConditionals = useMemo(() => {
+    if (showExpired) return filteredConditionals;
+    return filteredConditionals.filter((c) => {
+      if (c.status === "open") return true;
+      const openedDate = new Date(c.openedAt);
+      return openedDate >= thirtyDaysAgo;
+    });
+  }, [filteredConditionals, showExpired, thirtyDaysAgo]);
+
+  const expiredCount = useMemo(() => {
+    return filteredConditionals.filter((c) => {
+      if (c.status === "open") return false;
+      return new Date(c.openedAt) < thirtyDaysAgo;
+    }).length;
+  }, [filteredConditionals, thirtyDaysAgo]);
+
   const metrics = useMemo(() => {
     const openRecords = conditionals.filter((entry) => entry.status === "open");
     const dueToday = openRecords.filter((entry) => getConditionalDerivedStatus(entry) === "due_today").length;
@@ -253,6 +277,19 @@ export default function CondicionaisPage() {
       resetDraft();
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Não foi possível criar o condicional.");
+    }
+  }
+
+  async function handleDeleteConditional(conditionalId: string) {
+    const confirmed = window.confirm("Deseja excluir este condicional? Os itens e produtos reservados serao liberados.");
+    if (!confirmed) return;
+
+    try {
+      await deleteConditionalById(conditionalId);
+      const nextList = await refreshConditionalsList();
+      setSelectedConditionalId(nextList[0]?.id ?? null);
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha ao excluir condicional.");
     }
   }
 
@@ -358,7 +395,7 @@ export default function CondicionaisPage() {
           </div>
 
           <div className="h-full overflow-y-auto p-3 space-y-2 custom-scrollbar">
-            {filteredConditionals.map((conditional) => {
+            {visibleConditionals.map((conditional) => {
               const client = clients.find((entry) => entry.id === conditional.clientId);
               const derivedStatus = getConditionalDerivedStatus(conditional);
               const isSelected = conditional.id === selectedConditionalId;
@@ -392,12 +429,23 @@ export default function CondicionaisPage() {
               );
             })}
 
-            {filteredConditionals.length === 0 ? (
+            {visibleConditionals.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center opacity-40">
                 <ClipboardList className="mb-4 h-14 w-14 text-[#8c6d45]" />
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-[#5c4a33]">Nenhum condicional</p>
               </div>
             ) : null}
+
+            {expiredCount > 0 && (
+              <div className="px-4 py-3 border-t border-[#b08d57]/10">
+                <button
+                  onClick={() => setShowExpired(!showExpired)}
+                  className="w-full text-center text-[10px] font-black uppercase tracking-widest text-[#a69b8f] hover:text-[#8c6d45] transition-colors py-2"
+                >
+                  {showExpired ? "Ocultar condicionais antigos" : `Mostrar ${expiredCount} condiciona${expiredCount > 1 ? "is" : "l"} antigo${expiredCount > 1 ? "s" : ""}`}
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -412,6 +460,7 @@ export default function CondicionaisPage() {
               onOpenReceipt={() => setShowReceiptForId(selectedConditional.id)}
               onOpenReview={() => setReviewingConditionalId(selectedConditional.id)}
               onGoToCheckout={() => router.push("/caixa")}
+              onDelete={handleDeleteConditional}
             />
           ) : (
             <div className="flex h-full items-center justify-center p-12 text-center opacity-40">

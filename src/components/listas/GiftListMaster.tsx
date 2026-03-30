@@ -12,8 +12,24 @@ interface GiftListMasterProps {
 
 export function GiftListMaster({ lists, selectedListId, onSelectList }: GiftListMasterProps) {
   const [search, setSearch] = useState("");
+  const [showExpired, setShowExpired] = useState(false);
 
-  const filteredLists = lists.filter((list) =>
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+
+  const activeLists = lists.filter((list) => {
+    if (!list.eventDate) return true;
+    return new Date(list.eventDate) >= thirtyDaysAgo;
+  });
+
+  const expiredLists = lists.filter((list) => {
+    if (!list.eventDate) return false;
+    return new Date(list.eventDate) < thirtyDaysAgo;
+  });
+
+  const visibleLists = showExpired ? lists : activeLists;
+
+  const filteredLists = visibleLists.filter((list) =>
     list.brideName.toLowerCase().includes(search.toLowerCase()) ||
     list.city.toLowerCase().includes(search.toLowerCase())
   );
@@ -84,6 +100,17 @@ export function GiftListMaster({ lists, selectedListId, onSelectList }: GiftList
             <p className="font-medium text-[#8c6d45] uppercase tracking-widest text-xs leading-relaxed">
               Nenhuma lista encontrada para sua busca.
             </p>
+          </div>
+        )}
+
+        {expiredLists.length > 0 && (
+          <div className="px-4 py-3 border-t border-[#b08d57]/10">
+            <button
+              onClick={() => setShowExpired(!showExpired)}
+              className="w-full text-center text-[10px] font-black uppercase tracking-widest text-[#a69b8f] hover:text-[#8c6d45] transition-colors py-2"
+            >
+              {showExpired ? "Ocultar eventos encerrados" : `Mostrar ${expiredLists.length} evento${expiredLists.length > 1 ? "s" : ""} encerrado${expiredLists.length > 1 ? "s" : ""}`}
+            </button>
           </div>
         )}
       </div>

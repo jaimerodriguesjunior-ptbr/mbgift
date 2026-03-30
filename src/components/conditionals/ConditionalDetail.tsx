@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, Check, ClipboardList, Printer, Timer, TrendingUp, Undo2 } from "lucide-react";
+import { ArrowUpRight, Check, ClipboardList, Printer, Timer, Trash2, TrendingUp, Undo2 } from "lucide-react";
 import {
   getConditionalAdditionalVisitRevenue,
   getConditionalConvertedValue,
@@ -30,7 +30,8 @@ export function ConditionalDetail({
   checkoutDraftId,
   onOpenReceipt,
   onOpenReview,
-  onGoToCheckout
+  onGoToCheckout,
+  onDelete
 }: {
   conditional: ConditionalRecord;
   client: Client | null;
@@ -40,6 +41,7 @@ export function ConditionalDetail({
   onOpenReceipt: () => void;
   onOpenReview: () => void;
   onGoToCheckout: () => void;
+  onDelete?: (conditionalId: string) => void;
 }) {
   const derivedStatus = getConditionalDerivedStatus(conditional);
   const sentValue = getConditionalValue(conditional);
@@ -90,6 +92,16 @@ export function ConditionalDetail({
                   Cliente voltou com os itens
                 </button>
               )
+            ) : null}
+
+            {conditional.status === "open" && onDelete ? (
+              <button
+                onClick={() => onDelete(conditional.id)}
+                className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-[0.25em] text-red-600 hover:bg-red-50 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+                Excluir
+              </button>
             ) : null}
           </div>
         </div>

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { conditionalCheckoutDraftResponse, conditionalResponse } from "@/lib/conditionals/inputs";
 import {
   closeCurrentTenantConditionalAsReturned,
+  deleteCurrentTenantConditional,
   getCurrentTenantConditional,
   markCurrentTenantConditionalReceiptPrinted,
   prepareCurrentTenantConditionalCheckout
@@ -53,6 +54,17 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao atualizar condicional.";
     const status = /Payload|obrigatório|inválido|permissão|tenant associado|condicional|estoque/i.test(message) ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(request: Request, { params }: RouteContext) {
+  try {
+    await deleteCurrentTenantConditional(params.id);
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao excluir condicional.";
+    const status = /permissao|tenant associado|aberto|finalizado/i.test(message) ? 400 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

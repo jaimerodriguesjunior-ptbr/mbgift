@@ -514,3 +514,18 @@ export async function regenerateGiftListToken(giftListId: string) {
   };
 }
 
+export async function deleteGiftListById(giftListId: string) {
+  await parseJson(
+    await fetch(`/api/gift-lists/${giftListId}`, {
+      method: "DELETE"
+    })
+  );
+}
+
+export async function deleteConditionalById(conditionalId: string) {
+  await parseJson(
+    await fetch(`/api/conditionals/${conditionalId}`, {
+      method: "DELETE"
+    })
+  );
+}

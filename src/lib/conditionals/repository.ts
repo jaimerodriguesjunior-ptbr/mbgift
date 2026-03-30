@@ -303,3 +303,28 @@ export async function finalizeConditionalAfterSale(
 
   return getConditionalById(tenantId, conditionalId);
 }
+
+export async function deleteConditionalRecord(tenantId: string, conditionalId: string) {
+  const supabase = createSupabaseServerClient();
+
+  // Cascade: items → conditional
+  const { error: itemErr } = await supabase
+    .from("conditional_items")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("conditional_id", conditionalId);
+
+  if (itemErr) {
+    throw new Error(`Falha ao remover itens do condicional: ${itemErr.message}`);
+  }
+
+  const { error: condErr } = await supabase
+    .from("conditionals")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("id", conditionalId);
+
+  if (condErr) {
+    throw new Error(`Falha ao remover condicional: ${condErr.message}`);
+  }
+}

@@ -493,6 +493,41 @@ export async function purchaseGiftListItem(
   return data ? mapGiftListItemRow(data as GiftListItemRow) : null;
 }
 
+export async function deleteGiftList(tenantId: string, giftListId: string) {
+  const supabase = getSupabaseAdminClient() as any;
+
+  // Cascade: messages → items → list
+  const { error: msgErr } = await supabase
+    .from("gift_list_messages")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("gift_list_id", giftListId);
+
+  if (msgErr) {
+    throw new Error(`Falha ao remover recados da lista: ${msgErr.message}`);
+  }
+
+  const { error: itemErr } = await supabase
+    .from("gift_list_items")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("gift_list_id", giftListId);
+
+  if (itemErr) {
+    throw new Error(`Falha ao remover itens da lista: ${itemErr.message}`);
+  }
+
+  const { error: listErr } = await supabase
+    .from("gift_lists")
+    .delete()
+    .eq("tenant_id", tenantId)
+    .eq("id", giftListId);
+
+  if (listErr) {
+    throw new Error(`Falha ao remover lista: ${listErr.message}`);
+  }
+}
+
 export async function updateGiftListToken(tenantId: string, giftListId: string, hostAccessTokenHash: string) {
   const supabase = getSupabaseAdminClient() as any;
   const { data, error } = await supabase

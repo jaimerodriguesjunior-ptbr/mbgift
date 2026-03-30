@@ -24,6 +24,11 @@ export default function ListasPage() {
     setSelectedList(updated);
   };
 
+  const handleDeleteList = (deletedId: string) => {
+    setLists((prev) => prev.filter((list) => list.id !== deletedId));
+    setSelectedList(null);
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -113,6 +118,7 @@ export default function ListasPage() {
                 <GiftListDetail
                   list={selectedList}
                   onUpdate={handleUpdateList}
+                  onDelete={handleDeleteList}
                 />
               </div>
             </div>

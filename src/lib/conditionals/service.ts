@@ -11,6 +11,7 @@ import {
 } from "@/lib/conditionals/inputs";
 import {
   createConditionalRecord,
+  deleteConditionalRecord,
   finalizeConditionalAsReturned,
   getConditionalById,
   getOpenConditionalByClientId,
@@ -27,6 +28,26 @@ export async function listCurrentTenantConditionals() {
   }
 
   return listConditionalsByTenant(membership.tenantId);
+}
+
+export async function deleteCurrentTenantConditional(conditionalId: string) {
+  const membership = await getCurrentTenantMembership();
+  if (!membership) {
+    throw new Error("Usuario sem tenant associado.");
+  }
+
+  assertCanManageTenant(membership.role);
+
+  const conditional = await getConditionalById(membership.tenantId, conditionalId);
+  if (!conditional) {
+    throw new Error("Condicional nao encontrado.");
+  }
+
+  if (conditional.status !== "open") {
+    throw new Error("Apenas condicionais em aberto podem ser excluidos. Este condicional ja foi finalizado.");
+  }
+
+  await deleteConditionalRecord(membership.tenantId, conditionalId);
 }
 
 export async function getCurrentTenantConditional(conditionalId: string) {

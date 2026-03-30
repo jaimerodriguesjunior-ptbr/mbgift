@@ -15,6 +15,7 @@ import {
   addGiftListItem,
   cancelGiftListItemReservation,
   createGiftList,
+  deleteGiftList,
   getGiftListById,
   getGiftListBySlug,
   listGiftListsByTenant,
@@ -110,6 +111,18 @@ export async function createCurrentTenantGiftList(input: unknown) {
     giftList: await attachProducts(giftList),
     hostAccessToken
   };
+}
+
+export async function deleteCurrentTenantGiftList(giftListId: string) {
+  const membership = await requireCurrentTenantId();
+  assertCanManageTenant(membership.role);
+
+  const giftList = await getGiftListById(membership.tenantId, giftListId);
+  if (!giftList) {
+    throw new Error("Lista nao encontrada.");
+  }
+
+  await deleteGiftList(membership.tenantId, giftListId);
 }
 
 export async function updateCurrentTenantGiftList(giftListId: string, input: unknown) {

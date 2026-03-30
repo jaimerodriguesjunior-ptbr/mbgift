@@ -1,21 +1,23 @@
 "use client";
 
-import { Calendar, MapPin, ExternalLink, Gift, Plus, Check, RotateCcw, RefreshCcw, Copy, X } from "lucide-react";
+import { Calendar, MapPin, ExternalLink, Gift, Plus, Check, RotateCcw, RefreshCcw, Copy, X, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { type GiftItemStatus } from "@/types";
 import type { GiftListItemRecord, GiftListRecord } from "@/lib/gift-lists/types";
-import { cancelGiftListItemReservation, regenerateGiftListToken } from "@/lib/painel-api";
+import { cancelGiftListItemReservation, deleteGiftListById, regenerateGiftListToken } from "@/lib/painel-api";
 
 interface GiftListDetailProps {
   list: GiftListRecord | null;
   onUpdate: (list: GiftListRecord) => void;
+  onDelete?: (giftListId: string) => void;
 }
 
-export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
+export function GiftListDetail({ list, onUpdate, onDelete }: GiftListDetailProps) {
   const [formData, setFormData] = useState<GiftListRecord | null>(list);
   const [processingItemId, setProcessingItemId] = useState<string | null>(null);
   const [hostLinkToken, setHostLinkToken] = useState<string | null>(null);
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setFormData(list);
@@ -91,6 +93,25 @@ export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
     }
   }
 
+  async function handleDeleteList() {
+    const itemCount = formData?.items.length ?? 0;
+    const msg = itemCount > 0
+      ? `Esta lista possui ${itemCount} iten${itemCount > 1 ? "s" : ""} e todos os recados vinculados. Deseja excluir tudo permanentemente?`
+      : "Deseja excluir esta lista permanentemente?";
+
+    if (!window.confirm(msg)) return;
+
+    try {
+      setIsDeleting(true);
+      await deleteGiftListById(currentGiftListId);
+      onDelete?.(currentGiftListId);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Falha ao excluir a lista.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   return (
     <div className="flex h-full flex-col bg-white overflow-hidden custom-scrollbar animate-in fade-in slide-in-from-right-4 duration-700">
       <div className="flex flex-col md:flex-row items-center md:items-end justify-between px-8 pt-8 md:px-12 md:pt-14 border-b border-[#b08d57]/10 pb-10 bg-[#fdfbf7]/50 relative overflow-hidden group">
@@ -149,6 +170,14 @@ export function GiftListDetail({ list, onUpdate }: GiftListDetailProps) {
               <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
               Ver tela dos convidados
             </a>
+            <button
+              onClick={handleDeleteList}
+              disabled={isDeleting}
+              className="flex items-center gap-3 rounded-full bg-white border-2 border-red-200 px-6 py-3 text-[11px] font-black uppercase tracking-widest text-red-600 hover:bg-red-50 hover:border-red-300 transition-all shadow-sm group disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </button>
           </div>
 
           {hostLinkToken && (

@@ -166,8 +166,8 @@ export default function NovaListaPage() {
     if (!client || !createdList) return;
     const phone = client.phone.replace(/\D/g, "");
     const message = encodeURIComponent(
-      `Olá ${formData.brideName}! Sua lista na ${storeLabel} está pronta.\n\n` +
-      `🔗 Link para você gerenciar e escanear produtos: ${hostLink}`
+      `Ola ${client.name}! Sua lista "${formData.brideName}" na ${storeLabel} esta pronta.\n\n` +
+      `Entre nesse link para configurar o evento e escolher os presentes da sua lista:\n${hostLink}`
     );
     window.open(`https://wa.me/${phone}?text=${message}`, "_blank");
   };

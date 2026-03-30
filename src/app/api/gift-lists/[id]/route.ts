@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { giftListResponse } from "@/lib/gift-lists/inputs";
-import { getCurrentTenantGiftList, updateCurrentTenantGiftList } from "@/lib/gift-lists/service";
+import { deleteCurrentTenantGiftList, getCurrentTenantGiftList, updateCurrentTenantGiftList } from "@/lib/gift-lists/service";
 
 type RouteContext = {
   params: {
@@ -36,6 +36,17 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao atualizar lista.";
     const status = /Payload|obrigatorio|invalido|permissao|tenant associado|slug/i.test(message) ? 400 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(request: Request, { params }: RouteContext) {
+  try {
+    await deleteCurrentTenantGiftList(params.id);
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Falha ao excluir lista.";
+    const status = /permissao|tenant associado/i.test(message) ? 403 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
