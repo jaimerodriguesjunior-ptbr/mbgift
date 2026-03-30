@@ -65,90 +65,90 @@ export async function middleware(request: NextRequest) {
     }
   });
 
-  const { url, anonKey } = getSupabasePublicEnv();
-  const supabase = createServerClient(url, anonKey, {
-    cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
-      },
-      set(name: string, value: string, options) {
-        request.cookies.set({ name, value, ...options });
-        response.cookies.set({ name, value, ...options });
-      },
-      remove(name: string, options) {
-        request.cookies.set({ name, value: "", ...options });
-        response.cookies.set({ name, value: "", ...options, maxAge: 0 });
+  try {
+    const { url, anonKey } = getSupabasePublicEnv();
+    const supabase = createServerClient(url, anonKey, {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options) {
+          request.cookies.set({ name, value, ...options });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name: string, options) {
+          request.cookies.set({ name, value: "", ...options });
+          response.cookies.set({ name, value: "", ...options, maxAge: 0 });
+        }
       }
+    });
+
+    const {
+      data: { user },
+      error: authError
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      if (isProtectedPath(request.nextUrl.pathname)) {
+        return buildLoginRedirect(request, response, "auth");
+      }
+      return response;
     }
-  });
 
-  const {
-    data: { user },
-    error: authError
-  } = await supabase.auth.getUser();
+    const { data: memberships, error: membershipError } = await supabase
+      .from("tenant_memberships")
+      .select("id")
+      .eq("profile_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(2);
 
-  if (authError) {
-    if (isRecoverableAuthError(authError.message)) {
+    if (membershipError) {
       return isProtectedPath(request.nextUrl.pathname)
-        ? buildLoginRedirect(request, response, "auth")
+        ? buildLoginRedirect(request, response, "tenant")
         : response;
     }
 
-    return isProtectedPath(request.nextUrl.pathname)
-      ? buildLoginRedirect(request, response, "auth")
-      : response;
-  }
+    const membershipCount = memberships?.length ?? 0;
+    const hasSingleTenant = membershipCount === 1;
 
-  if (!user) {
-    return isProtectedPath(request.nextUrl.pathname)
-      ? buildLoginRedirect(request, response, "auth")
-      : response;
-  }
+    // Se estiver no login e tiver acesso, manda para o dashboard
+    if (request.nextUrl.pathname === LOGIN_PATH && hasSingleTenant) {
+      return buildDashboardRedirect(request, response);
+    }
 
-  const { data: memberships, error: membershipError } = await supabase
-    .from("tenant_memberships")
-    .select("id")
-    .eq("profile_id", user.id)
-    .order("created_at", { ascending: true })
-    .limit(2);
+    // Se estiver na raiz e tiver acesso, manda para o dashboard
+    if (request.nextUrl.pathname === "/" && hasSingleTenant) {
+        return buildDashboardRedirect(request, response);
+    }
 
-  if (membershipError) {
-    return isProtectedPath(request.nextUrl.pathname)
-      ? buildLoginRedirect(request, response, "tenant")
-      : response;
-  }
+    if (!isProtectedPath(request.nextUrl.pathname)) {
+      return response;
+    }
 
-  const membershipCount = memberships?.length ?? 0;
-  const hasSingleTenant = membershipCount === 1;
+    if (membershipCount === 0) {
+      return buildLoginRedirect(request, response, "no-tenant");
+    }
 
-  if (request.nextUrl.pathname === LOGIN_PATH && hasSingleTenant) {
-    return buildDashboardRedirect(request, response);
-  }
+    if (membershipCount > 1) {
+      return buildLoginRedirect(request, response, "multi-tenant");
+    }
 
-  if (!isProtectedPath(request.nextUrl.pathname)) {
+    return response;
+  } catch (err) {
+    console.error("Middleware error:", err);
     return response;
   }
-
-  if (membershipCount === 0) {
-    return buildLoginRedirect(request, response, "no-tenant");
-  }
-
-  if (membershipCount > 1) {
-    return buildLoginRedirect(request, response, "multi-tenant");
-  }
-
-  return response;
 }
 
 export const config = {
   matcher: [
-    "/login",
-    "/dashboard/:path*",
-    "/produtos/:path*",
-    "/clientes/:path*",
-    "/condicionais/:path*",
-    "/caixa/:path*",
-    "/configuracoes/:path*",
-    "/listas/:path*"
-  ]
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
