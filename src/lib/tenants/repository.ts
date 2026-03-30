@@ -10,6 +10,7 @@ const TENANT_SETTINGS_COLUMNS = `
   business_name,
   display_name,
   logo_label,
+  logo_url,
   tagline,
   primary_color,
   secondary_color,
@@ -33,6 +34,7 @@ type TenantRow = {
   business_name: string;
   display_name: string;
   logo_label: string | null;
+  logo_url: string | null;
   tagline: string | null;
   primary_color: string | null;
   secondary_color: string | null;
@@ -59,6 +61,7 @@ function mapTenantRow(row: TenantRow): TenantStoreIdentity {
     businessName: row.business_name,
     displayName: row.display_name,
     logoLabel: row.logo_label,
+    logoUrl: row.logo_url,
     tagline: row.tagline,
     primaryColor: row.primary_color,
     secondaryColor: row.secondary_color,
