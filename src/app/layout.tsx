@@ -8,9 +8,10 @@ const siteUrl =
   process.env.SITE_URL ??
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
-const title = "MBGifts | Gestão de presentes, listas e operação da loja";
+const storeName = "MBGifts";
+const title = `${storeName} - Lista de Presentes`;
 const description =
-  "Plataforma MBGifts para gestão de produtos, clientes, condicionais, caixa e listas de presentes.";
+  "Lista de presentes da MBGifts para gestao de eventos, convidados e escolhas da loja.";
 
 const serif = Cormorant_Garamond({
   subsets: ["latin"],
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
   description,
-  applicationName: "MBGifts",
+  applicationName: storeName,
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -41,15 +42,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    siteName: "MBGifts",
+    siteName: storeName,
     title,
     description,
     images: [
       {
-        url: "/mbgift.png",
-        width: 1024,
-        height: 1024,
-        alt: "MBGifts"
+        url: "/apple-touch-icon.png",
+        width: 180,
+        height: 180,
+        alt: storeName
       }
     ]
   },
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
     card: "summary",
     title,
     description,
-    images: ["/mbgift.png"]
+    images: ["/apple-touch-icon.png"]
   }
 };
 
