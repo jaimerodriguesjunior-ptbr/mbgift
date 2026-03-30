@@ -9,6 +9,7 @@ import { fetchCurrentTenantSettings, updateCurrentTenantSettings } from "@/lib/p
 type FormState = {
   businessName: string;
   displayName: string;
+  logoUrl: string | null;
   documentCnpj: string;
   stateRegistration: string;
   municipalRegistration: string;
@@ -36,6 +37,7 @@ function buildFormState() {
   return {
     businessName: "",
     displayName: "",
+    logoUrl: null,
     documentCnpj: "",
     stateRegistration: "",
     municipalRegistration: "",
@@ -72,6 +74,7 @@ export default function ConfiguracoesPage() {
         setFormData({
           businessName: tenant.businessName ?? "",
           displayName: tenant.displayName ?? "",
+          logoUrl: tenant.logoUrl ?? null,
           documentCnpj: tenant.documentCnpj ?? "",
           stateRegistration: tenant.stateRegistration ?? "",
           municipalRegistration: tenant.municipalRegistration ?? "",
@@ -138,6 +141,7 @@ export default function ConfiguracoesPage() {
       await updateCurrentTenantSettings({
         businessName: formData.businessName,
         displayName: formData.displayName,
+        logoUrl: formData.logoUrl,
         documentCnpj: formData.documentCnpj || null,
         stateRegistration: formData.stateRegistration || null,
         municipalRegistration: formData.municipalRegistration || null,
@@ -213,7 +217,49 @@ export default function ConfiguracoesPage() {
                 <section>
                   <div className="flex items-center gap-3 mb-6 pb-2 border-b border-[#b08d57]/20">
                     <Building2 className="h-5 w-5 text-[#8c6d45]" />
-                    <h2 className="font-serif text-lg text-[#2a2421]">Identificação Fiscal</h2>
+                    <h2 className="font-serif text-lg text-[#2a2421]">Identificação Fiscal & Identidade Virtual</h2>
+                  </div>
+
+                  <div className="mb-8 flex items-end gap-6">
+                    <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl border-2 border-dashed border-[#b08d57]/30 bg-white">
+                      {formData.logoUrl ? (
+                        <img src={formData.logoUrl} className="h-full w-full object-contain p-2" alt="Logo da loja" />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center text-[#8c6d45]/50">
+                          <Building2 className="h-6 w-6 mb-1" />
+                          <span className="text-[8px] font-black uppercase tracking-widest text-center px-1">Sem Logo</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8c6d45]">Logotipo da Loja</p>
+                       <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-[#b08d57]/20 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#5c4a33] transition-all hover:bg-[#f7f2ed] shadow-sm">
+                         <span>Anexar Imagem</span>
+                         <input 
+                           type="file" 
+                           accept="image/*" 
+                           className="hidden" 
+                           onChange={async (event) => {
+                             const file = event.target.files?.[0];
+                             if (!file) return;
+                             try {
+                               setIsSaving(true);
+                               const payload = new FormData();
+                               payload.append("file", file);
+                               const res = await fetch("/api/uploads/tenant-assets", { method: "POST", body: payload });
+                               if (!res.ok) throw new Error("Falha no upload");
+                               const data = await res.json();
+                               setFormData((current) => ({ ...current, logoUrl: data.publicUrl }));
+                               setFeedback("Logotipo carregado, clique em Salvar para manter.");
+                             } catch (err) {
+                               setFeedback("Falha ao subir imagem. Tente novamente.");
+                             } finally {
+                               setIsSaving(false);
+                             }
+                           }}
+                         />
+                       </label>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-5">

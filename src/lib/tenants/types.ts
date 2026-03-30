@@ -4,6 +4,7 @@ export type TenantStoreIdentity = {
   businessName: string;
   displayName: string;
   logoLabel: string | null;
+  logoUrl: string | null;
   tagline: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;

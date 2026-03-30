@@ -4,6 +4,7 @@ export type TenantSettingsUpdateInput = {
   businessName?: string;
   displayName?: string;
   logoLabel?: string | null;
+  logoUrl?: string | null;
   tagline?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
@@ -25,6 +26,7 @@ type TenantSettingsUpdateRow = {
   business_name?: string;
   display_name?: string;
   logo_label?: string | null;
+  logo_url?: string | null;
   tagline?: string | null;
   primary_color?: string | null;
   secondary_color?: string | null;
@@ -101,6 +103,7 @@ export function buildTenantSettingsUpdate(input: unknown): TenantSettingsUpdateI
     businessName: source.businessName === undefined ? undefined : normalizeRequiredString(source.businessName, "businessName"),
     displayName: source.displayName === undefined ? undefined : normalizeRequiredString(source.displayName, "displayName"),
     logoLabel: normalizeOptionalString(source.logoLabel),
+    logoUrl: normalizeOptionalString(source.logoUrl),
     tagline: normalizeOptionalString(source.tagline),
     primaryColor: normalizeOptionalColor(source.primaryColor, "primaryColor"),
     secondaryColor: normalizeOptionalColor(source.secondaryColor, "secondaryColor"),
@@ -124,6 +127,7 @@ export function tenantSettingsUpdateToRow(input: TenantSettingsUpdateInput): Ten
     business_name: input.businessName,
     display_name: input.displayName,
     logo_label: input.logoLabel,
+    logo_url: input.logoUrl,
     tagline: input.tagline,
     primary_color: input.primaryColor,
     secondary_color: input.secondaryColor,
@@ -149,6 +153,7 @@ export function tenantSettingsResponse(tenant: TenantStoreIdentity) {
     businessName: tenant.businessName,
     displayName: tenant.displayName,
     logoLabel: tenant.logoLabel,
+    logoUrl: tenant.logoUrl,
     tagline: tenant.tagline,
     primaryColor: tenant.primaryColor,
     secondaryColor: tenant.secondaryColor,
