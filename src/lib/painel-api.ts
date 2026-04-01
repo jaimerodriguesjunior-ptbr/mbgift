@@ -1,4 +1,10 @@
 import type { CheckoutDraft, Client, ConditionalRecord, Product, SaleRecord } from "@/types";
+import type {
+  FiscalImportPreview,
+  FiscalImportResolution,
+  FiscalInvoiceDetail,
+  FiscalInvoiceSummary
+} from "@/lib/fiscal/types";
 import type { GiftListRecord } from "@/lib/gift-lists/types";
 import type { TenantStoreIdentity } from "@/lib/tenants/types";
 
@@ -32,6 +38,49 @@ export async function updateCurrentTenantSettings(input: Partial<TenantStoreIden
   );
 
   return payload.tenant as TenantStoreIdentity | null;
+}
+
+export async function fetchFiscalInvoices() {
+  const payload = await parseJson(await fetch("/api/fiscal/invoices", { cache: "no-store" }));
+  return (payload.invoices ?? []) as FiscalInvoiceSummary[];
+}
+
+export async function fetchFiscalInvoice(invoiceId: string) {
+  const payload = await parseJson(await fetch(`/api/fiscal/invoices/${invoiceId}`, { cache: "no-store" }));
+  return payload.invoice as FiscalInvoiceDetail;
+}
+
+export async function previewFiscalImport(xmlContent: string) {
+  const payload = await parseJson(
+    await fetch("/api/fiscal/invoices/import/preview", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ xmlContent })
+    })
+  );
+
+  return payload.preview as FiscalImportPreview;
+}
+
+export async function commitFiscalImport(xmlContent: string, resolutions: FiscalImportResolution[]) {
+  const payload = await parseJson(
+    await fetch("/api/fiscal/invoices/import/commit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ xmlContent, resolutions })
+    })
+  );
+
+  return payload.result as {
+    invoiceId: string;
+    createdProducts: number;
+    updatedProducts: number;
+    unlinkedItems: number;
+  };
 }
 
 export async function fetchProducts() {

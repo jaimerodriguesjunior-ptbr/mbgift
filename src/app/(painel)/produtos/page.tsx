@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Tag } from "lucide-react";
+import { ArrowLeft, FileUp, Tag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -333,6 +333,13 @@ export default function ProdutosPage() {
         </div>
 
         <div className="flex items-center gap-4">
+          <Link
+            href="/fiscal/importar"
+            className="flex items-center gap-2 rounded-full border-2 border-[#b08d57]/20 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#5c4a33] hover:bg-[#faf8f5] hover:border-[#b08d57]/40 transition-all shadow-sm"
+          >
+            <FileUp className="h-3.5 w-3.5" />
+            Importar XML
+          </Link>
           <button
             onClick={() => setShowLabelCenter(true)}
             className="flex items-center gap-2 rounded-full border-2 border-[#b08d57]/20 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-[#5c4a33] hover:bg-[#faf8f5] hover:border-[#b08d57]/40 transition-all shadow-sm"
@@ -371,6 +378,21 @@ export default function ProdutosPage() {
             className="rounded-full bg-[#8c6d45] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-md"
           >
             Novo
+          </button>
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <Link
+            href="/fiscal/importar"
+            className="flex-1 rounded-full border border-[#b08d57]/20 bg-white px-4 py-2 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#5c4a33] shadow-sm"
+          >
+            Importar XML
+          </Link>
+          <button
+            onClick={() => setShowLabelCenter(true)}
+            className="flex-1 rounded-full border border-[#b08d57]/20 bg-white px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#5c4a33] shadow-sm"
+          >
+            Etiquetas
           </button>
         </div>
 
