@@ -69,7 +69,7 @@ export default function FiscalDetailPage() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">Detalhe Fiscal</p>
               <h1 className="font-serif text-3xl text-[#2a2421]">
-                {loading ? "Carregando..." : `NF ${invoice?.number || "-"} / Serie ${invoice?.series || "-"}`}
+                {loading ? "Carregando..." : `NF ${invoice?.number || "-"} / Série ${invoice?.series || "-"}`}
               </h1>
               <p className="text-sm text-[#7a6a58]">Confira XML, fornecedor, totais e itens importados.</p>
             </div>
@@ -100,10 +100,10 @@ export default function FiscalDetailPage() {
           <>
             <section className="grid gap-6 md:grid-cols-2">
               <div className="rounded-[2rem] border border-[#b08d57]/15 bg-white p-6 shadow-sm">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8c6d45]">Cabecalho</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#8c6d45]">Cabeçalho</p>
                 <div className="mt-4 space-y-3 text-sm text-[#2a2421]">
                   <p><span className="font-bold">Chave:</span> {invoice.accessKey}</p>
-                  <p><span className="font-bold">Emissao:</span> {formatDate(invoice.issueDate)}</p>
+                  <p><span className="font-bold">Emissão:</span> {formatDate(invoice.issueDate)}</p>
                   <p><span className="font-bold">Entrada:</span> {formatDate(invoice.entryDate)}</p>
                   <p><span className="font-bold">Natureza:</span> {invoice.natureOperation || "-"}</p>
                   <p><span className="font-bold">Total:</span> {formatCurrency(invoice.totalInvoiceAmount)}</p>
@@ -119,7 +119,7 @@ export default function FiscalDetailPage() {
                     <p className="text-[#7a6a58]">{invoice.issuerDocument || "-"}</p>
                   </div>
                   <div>
-                    <p className="font-bold">Destinatario</p>
+                    <p className="font-bold">Destinatário</p>
                     <p>{invoice.recipientName || "-"}</p>
                     <p className="text-[#7a6a58]">{invoice.recipientDocument || "-"}</p>
                   </div>
@@ -135,12 +135,12 @@ export default function FiscalDetailPage() {
                 <table className="min-w-full text-sm">
                   <thead className="text-left text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45]">
                     <tr>
-                      <th className="px-6 py-4">Descricao</th>
-                      <th className="px-6 py-4">Codigo</th>
+                      <th className="px-6 py-4">Descrição</th>
+                      <th className="px-6 py-4">Código</th>
                       <th className="px-6 py-4">Qtd</th>
-                      <th className="px-6 py-4">Unitario</th>
+                      <th className="px-6 py-4">Unitário</th>
                       <th className="px-6 py-4">Total</th>
-                      <th className="px-6 py-4">Acao</th>
+                      <th className="px-6 py-4">Ação</th>
                     </tr>
                   </thead>
                   <tbody>

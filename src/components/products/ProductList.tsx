@@ -52,7 +52,7 @@ export function ProductList({ products, selectedProductId, onSelectProduct, onEa
             <input
               ref={inputRef}
               type="text"
-              placeholder="Bipar codigo ou buscar"
+              placeholder="Bipar código ou buscar"
               className="w-full rounded-2xl border-2 border-[#b08d57]/30 bg-white py-3.5 pl-[4.35rem] pr-4 text-sm font-medium text-[#2a2421] placeholder-[#a69b8f] focus:border-[#8c6d45] focus:outline-none focus:ring-4 focus:ring-[#8c6d45]/5 transition-all shadow-sm"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}

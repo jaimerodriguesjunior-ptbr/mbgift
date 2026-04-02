@@ -73,6 +73,7 @@ export type FiscalProductMatch = {
   name: string;
   ean: string;
   stock: number;
+  price: number;
   category: string;
 };
 
@@ -95,6 +96,7 @@ export type FiscalImportResolution = {
   sourceItemKey: string;
   action: FiscalImportAction;
   productId?: string | null;
+  salePrice?: number | null;
   updateName?: boolean;
 };
 

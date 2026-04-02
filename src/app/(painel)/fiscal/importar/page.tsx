@@ -11,13 +11,52 @@ import { commitFiscalImport, fetchProducts, previewFiscalImport } from "@/lib/pa
 
 type ResolutionState = {
   productId: string;
-  ignored?: boolean;
+  salePrice: string;
 };
 
 const NEW_PRODUCT_VALUE = "__new__";
 
 function formatCurrency(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatPriceInput(value: number) {
+  return value.toFixed(2).replace(".", ",");
+}
+
+function normalizePriceInput(value: string) {
+  const normalizedSource = value.replace(/\./g, ",").replace(/[^\d,]/g, "");
+  const [integerPart = "", decimalRaw = ""] = normalizedSource.split(",");
+  const decimalPart = decimalRaw.slice(0, 2);
+
+  return decimalPart.length > 0 ? `${integerPart},${decimalPart}` : integerPart;
+}
+
+function parsePriceInput(value: string) {
+  const normalized = value.replace(",", ".").trim();
+  if (!normalized) {
+    return 0;
+  }
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+
+  return Number(parsed.toFixed(2));
+}
+
+function resolveSelectedSalePrice(productId: string, products: Product[], fallbackPrice = 0) {
+  if (productId === NEW_PRODUCT_VALUE) {
+    return 0;
+  }
+
+  const selected = products.find((product) => product.id === productId);
+  if (selected) {
+    return Number(selected.price ?? 0);
+  }
+
+  return fallbackPrice;
 }
 
 export default function FiscalImportPage() {
@@ -74,7 +113,8 @@ export default function FiscalImportPage() {
           previewPayload.items.map((item) => [
             item.sourceItemKey,
             {
-              productId: item.matchedProduct?.id ?? NEW_PRODUCT_VALUE
+              productId: item.matchedProduct?.id ?? NEW_PRODUCT_VALUE,
+              salePrice: formatPriceInput(item.matchedProduct?.price ?? 0)
             }
           ])
         )
@@ -143,21 +183,42 @@ export default function FiscalImportPage() {
     }));
   }
 
+  function handleSalePriceChange(sourceItemKey: string, rawValue: string) {
+    updateResolution(sourceItemKey, { salePrice: normalizePriceInput(rawValue) });
+  }
+
+  function handleSalePriceBlur(sourceItemKey: string) {
+    setResolutions((current) => {
+      const resolution = current[sourceItemKey];
+      if (!resolution) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [sourceItemKey]: {
+          ...resolution,
+          salePrice: formatPriceInput(parsePriceInput(resolution.salePrice))
+        }
+      };
+    });
+  }
+
   const hasInvalidResolution = preview?.items.some((item) => {
     const resolution = resolutions[item.sourceItemKey];
     if (!resolution) {
       return true;
     }
 
-    if (resolution.ignored) {
-      return false;
+    if (item.lockedByEan && !item.matchedProduct?.id) {
+      return true;
     }
 
-    if (item.lockedByEan) {
-      return !item.matchedProduct?.id;
+    if (!item.lockedByEan && !resolution.productId) {
+      return true;
     }
 
-    return !resolution.productId;
+    return false;
   }) ?? false;
 
   async function handleCommit() {
@@ -171,14 +232,7 @@ export default function FiscalImportPage() {
 
       const payload: FiscalImportResolution[] = preview.items.map((item) => {
         const resolution = resolutions[item.sourceItemKey];
-        if (resolution?.ignored) {
-          return {
-            sourceItemKey: item.sourceItemKey,
-            action: "unlinked",
-            productId: null,
-            updateName: false
-          };
-        }
+        const salePrice = parsePriceInput(resolution?.salePrice ?? "");
 
         return {
           sourceItemKey: item.sourceItemKey,
@@ -192,6 +246,7 @@ export default function FiscalImportPage() {
             : resolution?.productId === NEW_PRODUCT_VALUE
               ? null
               : resolution?.productId || null,
+          salePrice: salePrice ?? 0,
           updateName: false
         };
       });
@@ -320,7 +375,7 @@ export default function FiscalImportPage() {
                 <div className="mt-4 space-y-3 text-sm text-[#2a2421]">
                   <p><span className="font-bold">Modelo:</span> {preview.document.documentModel || "-"}</p>
                   <p><span className="font-bold">Ambiente:</span> {preview.document.environment}</p>
-                  <p><span className="font-bold">Destinatário:</span> {preview.document.recipient?.name || "-"}</p>
+                  <p><span className="font-bold">Destinatario:</span> {preview.document.recipient?.name || "-"}</p>
                   {preview.duplicateInvoiceId ? (
                     <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700">
                       Esta chave já existe no histórico fiscal do tenant.
@@ -353,17 +408,16 @@ export default function FiscalImportPage() {
                       ? productOptions.find((product) => product.id === selectedProductId) ?? null
                       : null;
                   const helperText = isPerfectMatch
-                    ? null
+                    ? "Preço atual carregado do produto encontrado."
                     : selectedProductId === NEW_PRODUCT_VALUE
-                      ? "Novo produto será criado com os dados da nota."
+                      ? "Novo produto será criado com este preço de venda."
                       : selectedProduct
-                        ? "Produto existente será atualizado com esta entrada."
+                        ? "Preço atual carregado do produto selecionado."
                         : null;
 
                   return (
                     <div key={item.sourceItemKey} className="rounded-xl border border-[#b08d57]/15 bg-[#fcfbf8] p-3 md:p-4">
-                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(240px,280px)_140px] md:items-center">
-                        {/* Coluna 1: Dados do item da nota */}
+                      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(240px,280px)_150px] md:items-start">
                         <div>
                           <p className="font-semibold text-[#2a2421] md:truncate">
                             {item.descricao}
@@ -379,66 +433,63 @@ export default function FiscalImportPage() {
                           <p className="mt-1 text-sm text-[#5c4a33]">
                             {item.quantity} x {formatCurrency(item.unitPrice)} = {formatCurrency(item.totalPrice)}
                           </p>
-                          {/* Sugestão inicial (não perfect match) */}
                           {!isPerfectMatch && matchedProduct ? (
-                             <p className="mt-1 text-xs font-semibold text-emerald-700">
-                               Sugestão: {matchedProduct.name}
-                             </p>
+                            <p className="mt-1 text-xs font-semibold text-emerald-700">
+                              Sugestão: {matchedProduct.name}
+                            </p>
                           ) : null}
                         </div>
 
-                        {/* Coluna 2: Seleção de Produto */}
                         <div>
-                          {!resolution?.ignored ? (
-                            <>
-                              <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45]">
-                                Selecione o produto
-                              </label>
-                              {isPerfectMatch && matchedProduct ? (
-                                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-sm text-emerald-700">
-                                  <p className="font-semibold truncate">{matchedProduct.name}</p>
-                                  <p className="mt-0.5 text-[10px] uppercase font-medium text-emerald-700/80">
-                                    {matchedProduct.ean || "Sem EAN"} • Estoque {matchedProduct.stock}
-                                  </p>
-                                </div>
-                              ) : (
-                                <select
-                                  value={selectedProductId}
-                                  onChange={(event) =>
-                                    updateResolution(item.sourceItemKey, { productId: event.target.value })
-                                  }
-                                  className="w-full rounded-xl border border-[#b08d57]/20 bg-white px-3 py-2 text-sm text-[#2a2421] outline-none focus:border-[#8c6d45]"
-                                >
-                                  <option value={NEW_PRODUCT_VALUE}>Produto Novo</option>
-                                  {productOptions.map((product) => (
-                                    <option key={product.id} value={product.id}>
-                                      {product.name} {product.ean ? `• ${product.ean}` : ""}
-                                    </option>
-                                  ))}
-                                </select>
-                              )}
-                              {helperText ? (
-                                <p className="mt-1 text-[10px] text-[#8c7b68]">{helperText}</p>
-                              ) : null}
-                            </>
+                          <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45]">
+                            Selecione o produto
+                          </label>
+                          {isPerfectMatch && matchedProduct ? (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-2 text-sm text-emerald-700">
+                              <p className="truncate font-semibold">{matchedProduct.name}</p>
+                              <p className="mt-0.5 text-[10px] font-medium uppercase text-emerald-700/80">
+                                {matchedProduct.ean || "Sem EAN"} • Estoque {matchedProduct.stock}
+                              </p>
+                            </div>
                           ) : (
-                            <p className="text-sm font-medium italic text-[#8c7b68]">Item ignorado</p>
+                            <select
+                              value={selectedProductId}
+                              onChange={(event) => {
+                                const nextProductId = event.target.value;
+                                updateResolution(item.sourceItemKey, {
+                                  productId: nextProductId,
+                                  salePrice: formatPriceInput(
+                                    resolveSelectedSalePrice(nextProductId, productOptions, matchedProduct?.price ?? 0)
+                                  )
+                                });
+                              }}
+                              className="w-full rounded-xl border border-[#b08d57]/20 bg-white px-3 py-2 text-sm text-[#2a2421] outline-none focus:border-[#8c6d45]"
+                            >
+                              <option value={NEW_PRODUCT_VALUE}>Produto Novo</option>
+                              {productOptions.map((product) => (
+                                <option key={product.id} value={product.id}>
+                                  {product.name} {product.ean ? `• ${product.ean}` : ""}
+                                </option>
+                              ))}
+                            </select>
                           )}
+                          {helperText ? (
+                            <p className="mt-1 text-[10px] text-[#8c7b68]">{helperText}</p>
+                          ) : null}
                         </div>
 
-                        {/* Coluna 3: Ação de Ignorar */}
-                        <div className="flex md:justify-end mt-2 md:mt-0">
-                          <label className="flex cursor-pointer items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={resolution?.ignored ?? false}
-                              onChange={(e) => updateResolution(item.sourceItemKey, { ignored: e.target.checked })}
-                              className="h-4 w-4 rounded border-[#b08d57]/30 text-[#8c6d45] focus:ring-[#8c6d45]"
-                            />
-                            <span className="text-xs font-semibold uppercase tracking-wider text-[#8c7b68]">
-                              Ignorar item
-                            </span>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45]">
+                            Preço de venda
                           </label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={resolution?.salePrice ?? "0,00"}
+                            onChange={(event) => handleSalePriceChange(item.sourceItemKey, event.target.value)}
+                            onBlur={() => handleSalePriceBlur(item.sourceItemKey)}
+                            className="w-full rounded-xl border border-[#b08d57]/20 bg-white px-3 py-2 text-sm text-[#2a2421] outline-none focus:border-[#8c6d45]"
+                          />
                         </div>
                       </div>
                     </div>

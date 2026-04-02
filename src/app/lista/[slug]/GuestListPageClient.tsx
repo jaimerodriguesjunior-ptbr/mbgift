@@ -80,8 +80,8 @@ export default function GuestListPageClient({ params }: { params: { slug: string
       <div className="flex h-screen items-center justify-center p-12 text-center bg-[#fefcfb]">
         <div className="space-y-4">
           <Gift className="h-16 w-16 mx-auto text-[#b08d57] opacity-20" />
-          <h2 className="font-serif text-3xl text-[#2a2421]">Lista nÃ£o encontrada</h2>
-          <p className="text-sm text-[#8c6d45] uppercase tracking-widest">Verifique o link ou entre em contato com os anfitriÃµes.</p>
+          <h2 className="font-serif text-3xl text-[#2a2421]">Lista não encontrada</h2>
+          <p className="text-sm text-[#8c6d45] uppercase tracking-widest">Verifique o link ou entre em contato com os anfitriões.</p>
         </div>
       </div>
     );
@@ -257,7 +257,7 @@ export default function GuestListPageClient({ params }: { params: { slug: string
       <section className="mx-auto max-w-7xl space-y-12 px-6 pt-14 md:space-y-20 md:pt-24">
         <div className="flex flex-col gap-6 border-b border-[#b08d57]/10 pb-8 md:flex-row md:items-end md:justify-between md:gap-8 md:pb-12">
           <div className="space-y-2">
-            <h2 className="font-serif text-4xl md:text-6xl text-[#2a2421]">SugestÃµes de Presentes</h2>
+            <h2 className="font-serif text-4xl md:text-6xl text-[#2a2421]">Sugestões de Presentes</h2>
             <p className="text-[10px] md:text-xs uppercase tracking-[0.4em] text-[#8c6d45] font-black">
               Escolha um presente especial
             </p>
@@ -306,7 +306,7 @@ export default function GuestListPageClient({ params }: { params: { slug: string
                       <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-[#8c6d45]">Seu Nome</label>
                       <input
                         className="w-full rounded-2xl border-2 border-[#d9c7ae] bg-white p-4 text-sm font-medium text-[#2a2421] shadow-[0_8px_24px_rgba(92,74,51,0.06)] outline-none transition-all placeholder:text-[#9aa3b2] focus:border-[#8c6d45] md:p-5"
-                        placeholder="Ex: FamÃ­lia Sampaio"
+                        placeholder="Ex: Família Sampaio"
                         value={guestInfo.name}
                         onChange={(event) => setGuestInfo({ ...guestInfo, name: event.target.value })}
                       />

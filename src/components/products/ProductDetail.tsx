@@ -199,7 +199,7 @@ export function ProductDetail({
 
       <input type="file" ref={fileInputRef} className="hidden" accept="image/*" capture="environment" multiple onChange={handleAddPhoto} />
 
-      <div className="md:hidden p-6 border-b border-[#b08d57]/10 bg-white/55 backdrop-blur-md">
+      <div className="md:hidden border-b border-[#b08d57]/10 bg-white/55 p-4 backdrop-blur-md">
         <h2 className="font-serif text-2xl text-[#2a2421] leading-tight mb-1">{productTitle}</h2>
         <p className="text-[10px] font-bold uppercase tracking-widest text-[#8c6d45]">Atualização rápida</p>
         {isCosmosDraft ? (
@@ -209,10 +209,10 @@ export function ProductDetail({
         ) : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 pb-44 md:px-6 md:py-4 md:pb-6">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-40 md:px-6 md:py-4 md:pb-6">
         <div className="mx-auto min-h-full w-full max-w-[1180px] md:rounded-[2rem] md:border md:border-white/70 md:bg-[rgba(253,251,247,0.40)] md:p-5 md:shadow-[0_16px_40px_rgba(176,141,87,0.10)] md:backdrop-blur-md">
-          <div className="flex h-full flex-col gap-6 xl:flex-row xl:gap-5">
-            <div className="flex-1 space-y-6">
+          <div className="flex h-full flex-col gap-4 xl:flex-row xl:gap-5">
+            <div className="flex-1 space-y-4">
               <div className="hidden md:grid grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4">
                 <CompactField
                   label="Nome do Produto"
@@ -246,8 +246,8 @@ export function ProductDetail({
                 </datalist>
               </div>
 
-              <div className="grid gap-5">
-                <div className="bg-white/40 md:bg-transparent p-6 md:p-0 rounded-3xl border border-[#b08d57]/10 md:border-0 shadow-sm md:shadow-none">
+              <div className="grid gap-4">
+                <div className="rounded-2xl border border-[#b08d57]/10 bg-white/40 p-4 shadow-sm md:rounded-3xl md:border-0 md:bg-transparent md:p-0 md:shadow-none">
                   <div className="space-y-4">
                     <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-4">
                       <PriceField
@@ -287,29 +287,41 @@ export function ProductDetail({
                       </div>
                     </div>
 
-                    <div className="md:hidden space-y-4">
-                      <div className="space-y-4">
-                        <label className="text-[12px] md:text-[11px] uppercase tracking-[0.25em] font-black text-[#5c4a33] block">Atualizar Quantidade</label>
-                        <div className="grid h-20 grid-cols-[3.5rem_minmax(0,1fr)_3.5rem] items-center gap-2 rounded-2xl border-2 border-[#b08d57]/30 bg-white p-1 shadow-md">
+                    <div className="grid gap-3 md:hidden">
+                      <PriceField
+                        label="Preço de Venda"
+                        name="price"
+                        value={priceInputValue}
+                        onChange={handlePriceChange}
+                        onBlur={handlePriceBlur}
+                        icon={<Coins className="h-4 w-4" />}
+                        placeholder="0,00"
+                      />
+
+                      <div className="space-y-2">
+                        <label className="block text-[10px] font-black uppercase tracking-[0.22em] text-[#5c4a33]">
+                          Quantidade
+                        </label>
+                        <div className="grid h-[52px] grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 rounded-2xl border border-[#b08d57]/22 bg-white px-1.5 shadow-sm">
                           <button
                             onClick={() => handleStockChange(-1)}
-                            className="flex h-full w-full items-center justify-center rounded-xl bg-[#f7f2ed] text-[#8c6d45] transition-all"
+                            className="flex h-10 w-10 items-center justify-center justify-self-start rounded-xl bg-[#f7f2ed] text-[#8c6d45] transition hover:bg-[#b08d57]/10"
                           >
-                            <Minus className="h-7 w-7" />
+                            <Minus className="h-5 w-5" />
                           </button>
                           <input
                             type="number"
                             name="stock"
                             value={formData.stock}
                             onChange={handleChange}
-                            className={`h-full min-w-0 bg-transparent text-center text-3xl font-black focus:outline-none ${quantityToneClass}`}
+                            className={`h-full min-w-0 bg-transparent text-center text-xl font-black focus:outline-none ${quantityToneClass}`}
                             min={reservedStock}
                           />
                           <button
                             onClick={() => handleStockChange(1)}
-                            className="flex h-full w-full items-center justify-center rounded-xl bg-[#8c6d45] text-white transition-all"
+                            className="flex h-10 w-10 items-center justify-center justify-self-end rounded-xl bg-[#8c6d45] text-white transition hover:bg-[#725a38]"
                           >
-                            <Plus className="h-7 w-7" />
+                            <Plus className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
@@ -318,9 +330,9 @@ export function ProductDetail({
                 </div>
               </div>
 
-              <div className="md:hidden space-y-4">
+              <div className="space-y-3 md:hidden">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-serif text-xl text-[#2a2421]">Fotos do Produto</h3>
+                  <h3 className="font-serif text-lg text-[#2a2421]">Fotos do Produto</h3>
                   <span className="rounded-full border border-[#b08d57]/20 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#8c6d45]">
                     {formData.images.length} foto{formData.images.length === 1 ? "" : "s"}
                   </span>
@@ -328,12 +340,12 @@ export function ProductDetail({
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-[#8c6d45]/35 bg-white px-6 py-6 text-[#8c6d45] transition hover:bg-[#b08d57]/5 hover:border-[#8c6d45]"
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#8c6d45]/35 bg-white px-5 py-4 text-[#8c6d45] transition hover:bg-[#b08d57]/5 hover:border-[#8c6d45]"
                 >
-                  <Camera className="h-8 w-8" />
+                  <Camera className="h-6 w-6" />
                   <div className="text-left">
                     <p className="text-xs font-black uppercase tracking-[0.22em]">Tirar ou adicionar foto</p>
-                    <p className="mt-1 text-sm font-medium text-[#5c4a33]">Use a camera do celular para atualizar o produto.</p>
+                    <p className="mt-1 text-xs font-medium text-[#5c4a33]">Use a camera do celular para atualizar o produto.</p>
                   </div>
                 </button>
 
@@ -407,16 +419,16 @@ export function ProductDetail({
         </div>
       </div>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-[#b08d57]/20 flex gap-4 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex gap-3 border-t border-[#b08d57]/20 bg-white p-4 shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
         <button
           onClick={() => onDiscard?.(formData)}
-          className="flex-1 rounded-2xl bg-white border-2 border-[#b08d57]/20 py-4 text-xs font-black uppercase tracking-widest text-[#5c4a33] active:bg-[#f7f2ed] transition-all"
+          className="flex-1 rounded-2xl bg-white border-2 border-[#b08d57]/20 py-3 text-xs font-black uppercase tracking-widest text-[#5c4a33] active:bg-[#f7f2ed] transition-all"
         >
           Descartar
         </button>
         <button
           onClick={handleSave}
-          className="flex-[2] rounded-2xl bg-[#8c6d45] py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 active:scale-[0.98] transition-all"
+          className="flex-[2] rounded-2xl bg-[#8c6d45] py-3 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#8c6d45]/20 active:scale-[0.98] transition-all"
         >
           Salvar Alterações
         </button>

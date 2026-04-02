@@ -54,7 +54,7 @@ export default function FiscalPage() {
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#8c6d45]">Fiscal</p>
               <h1 className="font-serif text-3xl text-[#2a2421]">Notas Importadas</h1>
-              <p className="text-sm text-[#7a6a58]">Historico de XML de entrada para estoque, contador e devolucao futura.</p>
+              <p className="text-sm text-[#7a6a58]">Histórico de XML de entrada para estoque, contador e devolução futura.</p>
             </div>
           </div>
 
@@ -103,7 +103,7 @@ export default function FiscalPage() {
                     <th className="px-6 py-4">Data</th>
                     <th className="px-6 py-4">Total</th>
                     <th className="px-6 py-4">Itens</th>
-                    <th className="px-6 py-4">Acoes</th>
+                    <th className="px-6 py-4">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -111,7 +111,7 @@ export default function FiscalPage() {
                     <tr key={invoice.id} className="border-t border-[#b08d57]/10 text-[#2a2421]">
                       <td className="px-6 py-4">
                         <Link href={`/fiscal/${invoice.id}`} className="font-bold text-[#5c4a33] transition hover:text-[#8c6d45]">
-                          NF {invoice.number || "-"} / Serie {invoice.series || "-"}
+                          NF {invoice.number || "-"} / Série {invoice.series || "-"}
                         </Link>
                         <p className="mt-1 max-w-[260px] truncate text-xs text-[#8c7b68]">{invoice.accessKey}</p>
                       </td>

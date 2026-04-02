@@ -34,6 +34,7 @@ function toProductMatch(row: FiscalProductRow): FiscalProductMatch {
     name: row.name,
     ean: row.ean ?? "",
     stock: Number(row.stock_quantity ?? 0),
+    price: Number(row.price ?? 0),
     category: row.category
   };
 }
@@ -106,6 +107,7 @@ function normalizeResolutionMap(preview: FiscalImportPreview, resolutions: Fisca
           sourceItemKey: item.sourceItemKey,
           action: "update_existing" as const,
           productId: item.matchedProduct?.id ?? null,
+          salePrice: item.matchedProduct?.price ?? null,
           updateName: false
         };
       }
@@ -114,6 +116,7 @@ function normalizeResolutionMap(preview: FiscalImportPreview, resolutions: Fisca
         sourceItemKey: item.sourceItemKey,
         action: null,
         productId: item.matchedProduct?.id ?? null,
+        salePrice: item.matchedProduct?.price ?? null,
         updateName: false
       };
     }
@@ -122,6 +125,7 @@ function normalizeResolutionMap(preview: FiscalImportPreview, resolutions: Fisca
       sourceItemKey: item.sourceItemKey,
       action: provided.action,
       productId: provided.productId ?? null,
+      salePrice: typeof provided.salePrice === "number" && Number.isFinite(provided.salePrice) ? provided.salePrice : null,
       updateName: Boolean(provided.updateName)
     };
   });
@@ -228,6 +232,7 @@ export async function commitCurrentTenantFiscalImport(input: {
         currentRow: currentProduct,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        salePrice: resolution.salePrice ?? Number(currentProduct.price ?? 0),
         ean: item.ean,
         eanTributavel: item.eanTributavel,
         ncm: item.ncm,
@@ -275,7 +280,8 @@ export async function commitCurrentTenantFiscalImport(input: {
           productId: persisted.id,
           productName: persisted.name,
           productEan: persisted.ean,
-          stockAfterImport: persisted.stock_quantity
+          stockAfterImport: persisted.stock_quantity,
+          salePriceAfterImport: resolution.salePrice ?? Number(currentProduct.price ?? 0)
         }
       });
       continue;
@@ -286,6 +292,7 @@ export async function commitCurrentTenantFiscalImport(input: {
         name: item.descricao,
         ean: item.ean,
         unitPrice: item.unitPrice,
+        salePrice: resolution.salePrice ?? 0,
         quantity: item.quantity,
         ncm: item.ncm,
         cest: item.cest,
@@ -323,7 +330,8 @@ export async function commitCurrentTenantFiscalImport(input: {
           productId: created.id,
           productName: created.name,
           productEan: created.ean,
-          stockAfterImport: created.stock_quantity
+          stockAfterImport: created.stock_quantity,
+          salePriceAfterImport: resolution.salePrice ?? 0
         }
       });
       continue;

@@ -440,6 +440,7 @@ export async function createProductFromFiscalImport(
     name: string;
     ean: string | null;
     unitPrice: number;
+    salePrice: number;
     quantity: number;
     ncm: string | null;
     cest: string | null;
@@ -459,7 +460,7 @@ export async function createProductFromFiscalImport(
       name: value.name,
       category: "Geral",
       ean: value.ean,
-      price: 0,
+      price: value.salePrice,
       stock_quantity: Math.max(0, Math.round(value.quantity)),
       image_urls: [],
       main_image_index: 0,
@@ -497,6 +498,7 @@ export async function updateProductFromFiscalImport(
     currentRow: FiscalProductRow;
     quantity: number;
     unitPrice: number;
+    salePrice: number;
     ean: string | null;
     eanTributavel: string | null;
     ncm: string | null;
@@ -514,6 +516,7 @@ export async function updateProductFromFiscalImport(
   const nextStock = Math.max(0, Number(value.currentRow.stock_quantity ?? 0) + Math.round(value.quantity));
   const updatePayload: Record<string, unknown> = {
     stock_quantity: nextStock,
+    price: value.salePrice,
     cost_price: value.unitPrice,
     last_purchase_price: value.unitPrice,
     last_purchase_at: value.issueDate

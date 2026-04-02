@@ -11,7 +11,7 @@ async function resolveDashboardBrand() {
   return {
     displayName: tenant?.displayName ?? tenant?.logoLabel ?? "MBGifts",
     businessName: tenant?.businessName ?? tenant?.displayName ?? "MBGifts",
-    tagline: tenant?.tagline ?? "GestÃ£o e operaÃ§Ã£o da loja"
+    tagline: tenant?.tagline ?? "Gestão e operação da loja"
   };
 }
 
@@ -56,19 +56,19 @@ export default async function DashboardPage() {
             href="/caixa"
             icon={<SalesIcon />}
             title="Vendas"
-            description="GestÃ£o de pedidos e relatÃ³rios."
+            description="Gestão de pedidos e relatórios."
           />
           <MenuCard
             href="/clientes"
             icon={<ClientsIcon />}
             title="Clientes"
-            description="Cadastro e histÃ³rico CRM."
+            description="Cadastro e histórico CRM."
           />
           <MenuCard
             href="/produtos"
             icon={<ProductsIcon />}
             title="Produtos"
-            description="CatÃ¡logo e estoque."
+            description="Catálogo e estoque."
           />
         </div>
 
@@ -125,7 +125,7 @@ export default async function DashboardPage() {
                 <Settings className="h-3.5 w-3.5" />
               </div>
               <span className="whitespace-nowrap text-[9px] font-black uppercase tracking-[0.32em] text-[#5c4a33]">
-                ConfiguraÃ§Ãµes
+                Configurações
               </span>
             </Link>
           </div>
